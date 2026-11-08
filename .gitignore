@@ -11,3 +11,4 @@ models/
 mlruns/
 mlflow.db
 .deepeval/
+.devdata/

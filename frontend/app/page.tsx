@@ -47,7 +47,9 @@ function Workspace() {
       );
   }, [leadId, session.token]);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function ask(event: { preventDefault(): void }) {
     event.preventDefault();
@@ -89,7 +91,7 @@ function Workspace() {
           >
             <strong>{item.display_name}</strong>
             <span className="muted">
-              {item.stage.replace("_", " ")}
+              {item.stage.replace("_", " ").replace(/^./, (c) => c.toUpperCase())}
               {session.role !== "rep" && ` · ${item.assigned_rep}`}
             </span>
           </button>

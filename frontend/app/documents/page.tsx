@@ -29,7 +29,9 @@ function Documents() {
       .catch((failure: Error) => setError(failure.message));
   }, [session.token]);
 
-  useEffect(refresh, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   // Polls running ingestions until each completes or fails.
   useEffect(() => {

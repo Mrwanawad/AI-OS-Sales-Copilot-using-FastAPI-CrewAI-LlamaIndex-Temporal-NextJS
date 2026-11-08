@@ -1,3 +1,7 @@
+import asyncio
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException, Request
@@ -184,8 +188,28 @@ def get_discount_policy() -> DiscountPolicy:
     )
 
 
+logger = logging.getLogger(__name__)
+
+
+def _load_models() -> None:
+    try:
+        get_retrieve()
+    except Exception:
+        # Search routes report the problem on first use; startup must not fail over it.
+        logger.exception("Warm-up of the retrieval models failed")
+
+
+@asynccontextmanager
+async def _warm_up(_app: FastAPI) -> AsyncIterator[None]:
+    """Loads model weights in the background, so /health answers at once and the first
+    search or upload doesn't wait for them."""
+    task = asyncio.create_task(asyncio.to_thread(_load_models))
+    yield
+    task.cancel()
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI OS")
+    app = FastAPI(title="AI OS", lifespan=_warm_up)
     settings = Settings()
     configure_tracing(settings)
     origins = [o.strip().rstrip("/") for o in (settings.cors_origins or "").split(",") if o.strip()]
