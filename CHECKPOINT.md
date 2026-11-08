@@ -94,7 +94,7 @@ Last updated: 2026-11-08, during step 9. Full design: `architecture.md`.
 ### Step 9: Partly done
 - **Auth:** signed tokens (HS256, expiry required, unique `jti`) carry identity and role on every route but `/health`, `/auth/login` and the HMAC-signed webhook. Roles and names in request bodies are ignored. The API stays closed if `AUTH_SECRET` is missing or short. `AUTH_PREVIOUS_SECRET` is accepted during rotation.
 - **Accounts (`identity` module):** scrypt password hashes, `/auth/login`, `/auth/logout` (revokes that token), `/auth/me`, `/auth/password`. Managers create, disable, enable and reset users and end sessions. 5 failures lock an account for 15 minutes. Unknown users, disabled users and tokens issued before a reset are refused. `scripts/create_user.py` makes the first manager; `seed_demo.py` creates demo logins when `DEMO_PASSWORD` is set.
-- **Uploads:** `POST /knowledge/documents` (team lead or manager) stores the file in Postgres (`stored_files`), reserves the next version atomically (`knowledge_documents`), and starts `IngestDocumentWorkflow` with `stored:<id>`. The worker copies it to a temp file. Status at `/knowledge/documents/{id}/versions/{v}`. Call recordings can use `stored:` references too. The API and worker need no shared disk.
+- **Uploads:** `POST /knowledge/documents` (team lead or manager) stores the file in Postgres (`stored_files`), reserves the next version atomically (`knowledge_documents`), and starts `IngestDocumentWorkflow` with `stored:<id>`. The worker copies it to a temp file. Status at `/knowledge/documents/{id}/versions/{v}`. Call recordings can use `stored:` references too; dialers that can't host recordings upload to `POST /crm/interactions/{id}/recording` (consent required, 200 MB cap), which starts transcription. The API and worker need no shared disk.
 - **Best-time model:** `train_best_time.py --publish` stores a promoted model as `stored:best-time-champion`; the API and worker check its hash every 10 minutes and reload it. Render cron retrains weekly (Fridays 01:00 UTC).
 - **Escalation push:** `ESCALATION_WEBHOOK_URL` gets HMAC-signed `escalation.opened` and `escalation.answered` events with ids and a link, never the question or answer. Failures are logged; the ticket stays in the queue.
 - **Web app (`frontend/`):** Next.js 16, login, workspace (leads, agent chat with citations, context card), escalation queue and knowledge approvals, document upload with status polling. `npm run build` passes. CI job added.
@@ -111,12 +111,11 @@ Last updated: 2026-11-08, during step 9. Full design: `architecture.md`.
 - [ ] 9. Remaining: run the answer gate with keys, replace synthetic gold sets with team-lead-graded ones, decide on Ragas, run the Docker stack, push to GitHub, deploy to Render and Vercel.
 - [x] Next.js frontend. Done 2026-11-08; not yet tried against a live API with real LLM answers.
 - [x] Document upload route. Done 2026-11-08.
-- [ ] Re-run the full test suite once disk space is back.
+- [x] Full suite re-run: 491 pass (2026-11-08).
 
 ### Must Fix Before Deploying
 - [x] Login, logout, session revocation and secret rotation. SSO is still not built.
-- [ ] Discount limits in `src/ai_os/shared/config.py` (2%, 5%, 10%) are invented placeholders. Replace them with the brokerage's real policy.
-- [ ] The calling window in `best_time/application/recommend.py` (09:00 to 21:00, all week) is a placeholder. Replace it with the brokerage's policy.
+- [ ] Discount limits (2%, 5%, 10%) and the calling window (09:00-21:00, all week) are placeholders. Both are now settings (`DISCOUNT_LIMIT_*_PCT`, `CALL_WINDOW_*` in `.env.example`); set the brokerage's real policy there.
 - [x] Model reaches API and worker through Postgres; weekly retrain on Render cron.
 - [x] Ticket push through a signed webhook. Still needs a receiver (n8n, Zapier or a WhatsApp gateway) chosen and set up.
 - [x] Files go through Postgres. Uploads are capped at 50 MB; move to object storage (S3 or R2) behind the same port if recordings get large.

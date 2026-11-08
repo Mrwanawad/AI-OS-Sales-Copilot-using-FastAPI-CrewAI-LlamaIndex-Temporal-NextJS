@@ -1,1 +1,1 @@
-{"recall_at_5": 0.9, "mrr": 0.7, "ndcg_at_10": 0.7, "exact_code_recall_at_5": 1.0, "arabic_recall_at_5": 0.9}
+{"recall_at_5": 0.9, "mrr": 0.7, "ndcg_at_10": 0.7, "exact_code_recall_at_5": 1.0, "arabic_recall_at_5": 0.85}

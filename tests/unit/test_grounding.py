@@ -49,3 +49,21 @@ def test_number_from_question_is_allowed() -> None:
 def test_missing_and_unknown_citations_are_flagged() -> None:
     assert problems("No numbers here.", []) == ["the answer cites no evidence"]
     assert "E9" in problems("No numbers here.", ["E9"])[0]
+
+
+def test_shorthand_amounts_match_their_full_form() -> None:
+    assert numbers_in("EGP 5.2M, 520K, 3.9 million") == {D("5200000"), D("520000"), D("3900000")}
+    assert numbers_in("٣٫٩ مليون جنيه") == {D("3900000")}
+    assert numbers_in("150 m² and 12 km") == {D("150"), D("12")}
+    assert problems("It costs 5M EGP [E1].", ["E1"]) == []
+
+
+def test_a_percentage_needs_a_percentage_in_the_evidence() -> None:
+    plan = [
+        Evidence("P", EvidenceItem("10 percent down over 8 years", SourceKind.DOCUMENT, "plan"))
+    ]
+
+    assert find_grounding_problems("10% down over 8 years.", ["P"], plan, "Plan?") == []
+    flagged = find_grounding_problems("Maintenance is 8%.", ["P"], plan, "Maintenance?")
+    assert "8%" in flagged[0]
+    assert find_grounding_problems("Yes, 8% works.", ["P"], plan, "Is 8% ok?") == []

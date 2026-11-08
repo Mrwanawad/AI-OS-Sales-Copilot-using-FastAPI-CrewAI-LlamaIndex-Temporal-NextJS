@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     discount_limit_team_lead_pct: Decimal = Decimal("5")
     discount_limit_manager_pct: Decimal = Decimal("10")
 
+    # When reps may call, in BUSINESS_TIMEZONE. Placeholder: set the brokerage's policy.
+    call_window_first_hour: int = 9
+    call_window_last_hour: int = 21
+    # Comma-separated weekday numbers, Monday = 0. Example without Friday: 0,1,2,3,5,6
+    call_window_days: str = "0,1,2,3,4,5,6"
+
     # Answers below this self-reported confidence go to a person. Calibrate on the eval set.
     agent_min_confidence: float = 0.5
 

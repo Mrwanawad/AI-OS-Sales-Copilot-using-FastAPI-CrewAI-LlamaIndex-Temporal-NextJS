@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from ai_os.modules.agent.domain.models import Evidence
-from ai_os.shared.numbers import numbers_in
+from ai_os.shared.numbers import numbers_in, percentages_in
 
 __all__ = ["find_grounding_problems", "numbers_in"]
 
@@ -18,12 +18,16 @@ def find_grounding_problems(
     if unknown:
         problems.append(f"unknown evidence ids: {', '.join(unknown)}")
 
-    allowed = numbers_in(question)
-    for cited in cited_ids:
-        if cited in by_id:
-            allowed |= numbers_in(by_id[cited].item.text)
+    sources = [question] + [by_id[c].item.text for c in cited_ids if c in by_id]
+    allowed = set().union(*(numbers_in(text) for text in sources))
     invented = sorted(numbers_in(answer) - allowed)
     if invented:
         listed = ", ".join(str(number) for number in invented)
         problems.append(f"numbers not found in the cited evidence: {listed}")
+    # "8%" is not supported by "8 years": a percentage must appear as a percentage.
+    allowed_percentages = set().union(*(percentages_in(text) for text in sources))
+    wrong_unit = sorted(percentages_in(answer) - allowed_percentages - set(invented))
+    if wrong_unit:
+        listed = ", ".join(f"{number}%" for number in wrong_unit)
+        problems.append(f"percentages not found as percentages in the cited evidence: {listed}")
     return problems

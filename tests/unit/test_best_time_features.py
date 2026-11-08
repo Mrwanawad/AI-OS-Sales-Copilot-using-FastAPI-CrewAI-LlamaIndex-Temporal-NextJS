@@ -3,13 +3,9 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from ai_os.modules.best_time.application.recommend import (
-    CALL_HOURS,
-    RecommendBestTime,
-    candidate_slots,
-)
+from ai_os.modules.best_time.application.recommend import RecommendBestTime, candidate_slots
 from ai_os.modules.best_time.domain.features import FEATURE_NAMES, features, training_rows
-from ai_os.modules.best_time.domain.models import CallRecord
+from ai_os.modules.best_time.domain.models import CallingWindow, CallRecord
 
 CAIRO = ZoneInfo("Africa/Cairo")
 # A Monday.
@@ -83,9 +79,27 @@ def test_training_and_serving_share_identical_features() -> None:
 def test_slots_stay_in_calling_hours_and_the_next_week() -> None:
     slots = candidate_slots(NOW, CAIRO)
 
-    assert all(slot.hour in CALL_HOURS for slot in slots)
+    assert all(9 <= slot.hour <= 21 for slot in slots)
     assert all(NOW < slot <= NOW + timedelta(days=7) for slot in slots)
-    assert len(slots) == 7 * len(CALL_HOURS)
+    assert len(slots) == 7 * 13
+
+
+def test_configured_window_limits_hours_and_skips_days() -> None:
+    no_friday = CallingWindow(11, 19, frozenset({0, 1, 2, 3, 5, 6}))
+
+    slots = candidate_slots(NOW, CAIRO, no_friday)
+
+    assert all(11 <= slot.hour <= 19 for slot in slots)
+    assert all(slot.astimezone(CAIRO).weekday() != 4 for slot in slots)
+    assert len(slots) == 6 * 9
+
+
+@pytest.mark.parametrize(
+    ("first", "last", "days"), [(22, 9, {0}), (9, 24, {0}), (9, 21, set()), (9, 21, {7})]
+)
+def test_invalid_windows_are_refused(first: int, last: int, days: set[int]) -> None:
+    with pytest.raises(ValueError):
+        CallingWindow(first, last, frozenset(days))
 
 
 class PrefersEvening:

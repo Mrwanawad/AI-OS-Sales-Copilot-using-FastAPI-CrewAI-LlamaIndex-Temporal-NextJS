@@ -20,6 +20,7 @@ from ai_os.modules.agent.domain.models import (
     Intent,
     MortgageQuery,
 )
+from ai_os.modules.agent.domain.non_answers import says_evidence_is_silent
 from ai_os.modules.agent.ports.tools import (
     CalculatorTool,
     ContextCardTool,
@@ -240,7 +241,7 @@ class AnswerFlow(Flow[AnswerState]):
         await self._escalate(f"answer failed grounding checks: {feedback}")
 
     async def _accept(self, composed: ComposedAnswer, evidence: Sequence[Evidence]) -> None:
-        if not composed.answered_from_evidence:
+        if not composed.answered_from_evidence or says_evidence_is_silent(composed.answer):
             await self._escalate("the evidence does not answer the question")
             return
         if composed.confidence < self._min_confidence:

@@ -1,0 +1,8 @@
+{
+  "sql_guard.recall": 1.0,
+  "sql_guard.precision": 1.0,
+  "grounding.recall": 0.95,
+  "grounding.precision": 0.95,
+  "non_answers.recall": 0.9,
+  "non_answers.precision": 0.9
+}

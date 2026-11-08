@@ -156,6 +156,14 @@ class PostgresCrmStore:
                 update(interactions).where(interactions.c.id == interaction_id).values(text=text)
             )
 
+    async def set_recording(self, interaction_id: str, reference: str) -> None:
+        async with self._engine.begin() as connection:
+            await connection.execute(
+                update(interactions)
+                .where(interactions.c.id == interaction_id)
+                .values(recording_path=reference)
+            )
+
     async def update_lead(
         self, lead_id: str, stage: LeadStage | None, fields: Mapping[str, str]
     ) -> None:

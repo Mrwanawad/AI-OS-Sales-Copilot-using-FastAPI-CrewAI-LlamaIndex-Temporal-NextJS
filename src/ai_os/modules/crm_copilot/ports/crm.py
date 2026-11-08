@@ -30,6 +30,8 @@ class CrmStore(Protocol):
 
     async def set_interaction_text(self, interaction_id: str, text: str) -> None: ...
 
+    async def set_recording(self, interaction_id: str, reference: str) -> None: ...
+
     async def update_lead(
         self, lead_id: str, stage: LeadStage | None, fields: Mapping[str, str]
     ) -> None: ...
@@ -51,6 +53,12 @@ class Transcriber(Protocol):
 
 class Diarizer(Protocol):
     async def diarize(self, path: Path) -> Sequence[SpeakerTurn]: ...
+
+
+class RecordingUploads(Protocol):
+    async def put(self, filename: str, content_type: str, data: bytes, uploaded_by: str) -> str:
+        """Stores the bytes and returns a reference the worker can read."""
+        ...
 
 
 class RecordingFiles(Protocol):

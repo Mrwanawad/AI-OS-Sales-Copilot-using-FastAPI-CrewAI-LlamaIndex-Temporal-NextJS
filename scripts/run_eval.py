@@ -74,10 +74,7 @@ async def evaluate(real_models: bool) -> dict[str, float]:
         totals["recall_at_5"].append(recall)
         totals["mrr"].append(reciprocal_rank(ranked, case["relevant"]))
         totals["ndcg_at_10"].append(ndcg_at_k(ranked, case["relevant"], 10))
-        if case["tag"] == "exact_code":
-            totals["exact_code_recall_at_5"].append(recall)
-        if case["tag"] == "arabic":
-            totals["arabic_recall_at_5"].append(recall)
+        totals[f"{case['tag']}_recall_at_5"].append(recall)
     await client.close()
     return {name: round(sum(values) / len(values), 4) for name, values in totals.items()}
 

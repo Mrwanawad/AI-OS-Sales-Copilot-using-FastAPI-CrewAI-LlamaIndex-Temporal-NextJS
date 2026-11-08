@@ -32,9 +32,7 @@ def verify_password(password: str, stored: str) -> bool:
 
 
 # Verified against when the user doesn't exist, so timing doesn't reveal valid usernames.
-DUMMY_HASH = (
-    f"{_SCHEME}${_N}${_R}${_P}${'00' * 16}$" + "00" * 64
-)
+DUMMY_HASH = f"{_SCHEME}${_N}${_R}${_P}${'00' * 16}$" + "00" * 64
 
 
 def _derive(password: str, salt: bytes, n: int, r: int, p: int) -> bytes:

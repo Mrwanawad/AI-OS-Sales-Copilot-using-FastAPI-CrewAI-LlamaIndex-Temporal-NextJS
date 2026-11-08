@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from ai_os.modules.best_time.application.recommend import RecommendBestTime
-from ai_os.modules.best_time.domain.models import CallRecord
+from ai_os.modules.best_time.domain.models import CallingWindow, CallRecord
 from ai_os.modules.best_time.ports.model import AnswerModel
 from ai_os.modules.crm_copilot.domain.models import InteractionKind
 from ai_os.modules.crm_copilot.ports.crm import CrmStore
@@ -109,6 +109,11 @@ def build_recommend(settings: Settings, store: CrmStore) -> RecommendBestTime:
         CrmCallHistory(store),
         ZoneInfo(settings.business_timezone),
         lambda: datetime.now(UTC),
+        window=CallingWindow(
+            settings.call_window_first_hour,
+            settings.call_window_last_hour,
+            frozenset(int(day) for day in settings.call_window_days.split(",") if day.strip()),
+        ),
     )
 
 

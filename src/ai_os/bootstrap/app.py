@@ -60,6 +60,19 @@ def _upload_document() -> UploadDocument:
     return build_upload_document(Settings(), get_vector_store)
 
 
+@lru_cache
+def get_recording_uploads():
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    from ai_os.bootstrap.uploads import StoredUploads
+    from ai_os.shared.files import PostgresFileStore
+
+    url = Settings().async_database_url
+    if not url:
+        raise HTTPException(status_code=503, detail="Set ASYNC_DATABASE_URL")
+    return StoredUploads(PostgresFileStore(create_async_engine(url)))
+
+
 def get_upload_document() -> UploadDocument:
     try:
         return _upload_document()
@@ -250,7 +263,14 @@ def create_app() -> FastAPI:
     app.include_router(best_time_router(get_recommend_best_time, auth, lead_access))
     app.include_router(escalation_router(get_escalations, auth))
     app.include_router(
-        crm_router(get_crm_store, get_event_publisher, get_webhook_secret, auth, lead_access)
+        crm_router(
+            get_crm_store,
+            get_event_publisher,
+            get_webhook_secret,
+            auth,
+            lead_access,
+            get_recording_uploads,
+        )
     )
     app.include_router(knowledge_router(get_retrieve, auth))
     app.include_router(create_documents_router(get_upload_document, auth))

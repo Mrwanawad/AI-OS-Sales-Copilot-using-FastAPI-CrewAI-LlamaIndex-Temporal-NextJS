@@ -13,3 +13,28 @@
 {"query": "هل يوجد حمام سباحة للأطفال؟", "relevant": ["faq-arabic"], "tag": "arabic"}
 {"query": "توكيل رسمي للعميل المغترب", "relevant": ["faq-arabic"], "tag": "arabic"}
 {"query": "هل الوحده تسلم بتشطيب كامل", "relevant": ["faq-arabic"], "tag": "arabic"}
+{"query": "Where can my client work out at the Gardens compound?", "relevant": ["demo-gardens-brochure"], "tag": "paraphrase"}
+{"query": "Is the Gardens compound guarded at night?", "relevant": ["demo-gardens-brochure"], "tag": "paraphrase"}
+{"query": "Is there a hospital close to Demo Gardens?", "relevant": ["demo-gardens-brochure"], "tag": "paraphrase"}
+{"query": "Can buyers lease their Bay chalet when they are away?", "relevant": ["demo-bay-brochure"], "tag": "paraphrase"}
+{"query": "Is there somewhere to dock a boat at Demo Bay?", "relevant": ["demo-bay-brochure"], "tag": "paraphrase"}
+{"query": "Does the coastal project have its own beach?", "relevant": ["demo-bay-brochure"], "tag": "paraphrase"}
+{"query": "How many years can the client spread payments over at the Bay?", "relevant": ["payment-plans"], "tag": "paraphrase"}
+{"query": "What percentage is paid upfront for Gardens units?", "relevant": ["payment-plans"], "tag": "paraphrase"}
+{"query": "Can the client get the booking money back if they change their mind?", "relevant": ["company-policy"], "tag": "paraphrase"}
+{"query": "When do I have to log a client call in the CRM?", "relevant": ["company-policy"], "tag": "paraphrase"}
+{"query": "Can an expat client sign the contract from abroad?", "relevant": ["faq-arabic"], "tag": "cross_lingual"}
+{"query": "Are units delivered fully finished with kitchen and AC?", "relevant": ["faq-arabic"], "tag": "cross_lingual"}
+{"query": "هل يوجد شاطئ خاص في ديمو باي؟", "relevant": ["demo-bay-brochure"], "tag": "cross_lingual"}
+{"query": "كم المقدم في خطة السداد؟", "relevant": ["payment-plans"], "tag": "cross_lingual"}
+{"query": "هل رسوم الحجز بترجع؟", "relevant": ["company-policy"], "tag": "cross_lingual"}
+{"query": "فيه جيم في الكمبوند؟", "relevant": ["faq-arabic", "demo-gardens-brochure"], "tag": "arabic"}
+{"query": "Demo Gardnes swiming pool", "relevant": ["demo-gardens-brochure"], "tag": "typo"}
+{"query": "refundabel reservaton fee", "relevant": ["company-policy"], "tag": "typo"}
+{"query": "DB 110", "relevant": ["demo-bay-prices"], "tag": "exact_code"}
+{"query": "price of db-120 chalet", "relevant": ["demo-bay-prices"], "tag": "exact_code"}
+{"query": "DG-201 townhouse", "relevant": ["demo-gardens-prices"], "tag": "exact_code"}
+{"query": "Compare the down payments of Demo Gardens and Demo Bay", "relevant": ["payment-plans"], "tag": "multi"}
+{"query": "Pools and kids area plus the payment plan for Demo Gardens", "relevant": ["demo-gardens-brochure", "payment-plans"], "tag": "multi"}
+{"query": "Discount approval and reservation refund rules", "relevant": ["company-policy"], "tag": "multi"}
+{"query": "Marina opening and delivery date at Demo Bay", "relevant": ["demo-bay-brochure"], "tag": "multi"}

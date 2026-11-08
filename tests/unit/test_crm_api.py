@@ -143,3 +143,77 @@ def test_reps_list_their_own_leads_and_team_leads_list_all() -> None:
     assert other_rep.json() == []
     assert [lead["id"] for lead in team_lead.json()] == [LEAD.id]
     assert own.json()[0]["stage"] == LEAD.stage.value
+
+
+class FakeRecordings:
+    def __init__(self) -> None:
+        self.saved: list[tuple[str, bytes, str]] = []
+
+    async def put(self, filename: str, content_type: str, data: bytes, uploaded_by: str) -> str:
+        self.saved.append((filename, data, uploaded_by))
+        return f"stored:rec{len(self.saved)}"
+
+
+def recording_client(store: FakeCrmStore, recordings: FakeRecordings, publisher: FakePublisher):
+    app = FastAPI()
+    app.include_router(
+        create_router(
+            lambda: store,
+            lambda: publisher,
+            lambda: SECRET,
+            AUTH,
+            _lead_access_for(store),
+            lambda: recordings,
+        )
+    )
+    return TestClient(app)
+
+
+def _lead_access_for(store: FakeCrmStore):
+    from ai_os.modules.crm_copilot.application.access import can_access_lead
+
+    async def access(user, lead_id: str) -> bool:
+        return await can_access_lead(store, user, lead_id)
+
+    return access
+
+
+AUDIO = {"file": ("call.mp3", b"ID3fake-audio", "audio/mpeg")}
+
+
+def test_recording_upload_stores_the_file_and_starts_transcription() -> None:
+    store = FakeCrmStore(call(recording_consent=True, recording_path=None))
+    recordings, publisher = FakeRecordings(), FakePublisher()
+    client = recording_client(store, recordings, publisher)
+
+    response = client.post("/crm/interactions/c1/recording", files=AUDIO, headers=bearer("rep-a"))
+
+    assert response.status_code == 202, response.text
+    assert store.interactions["c1"].recording_path == "stored:rec1"
+    assert recordings.saved[0][2] == "rep-a"
+    event_id, kind, lead_id, interaction_id, *_ = publisher.events[0]
+    assert (kind, lead_id, interaction_id) == ("call_ended", "L1", "c1")
+    assert event_id == "recording-c1-rec1"
+
+
+def test_recording_upload_needs_consent_access_a_call_and_audio() -> None:
+    no_consent = FakeCrmStore(call(recording_consent=False))
+    recordings, publisher = FakeRecordings(), FakePublisher()
+
+    refused = recording_client(no_consent, recordings, publisher).post(
+        "/crm/interactions/c1/recording", files=AUDIO, headers=bearer("rep-a")
+    )
+    consented = FakeCrmStore(call(recording_consent=True))
+    client = recording_client(consented, recordings, publisher)
+    other_rep = client.post("/crm/interactions/c1/recording", files=AUDIO, headers=bearer("rep-b"))
+    unknown = client.post("/crm/interactions/nope/recording", files=AUDIO, headers=bearer("rep-a"))
+    not_audio = client.post(
+        "/crm/interactions/c1/recording",
+        files={"file": ("notes.pdf", b"%PDF", "application/pdf")},
+        headers=bearer("rep-a"),
+    )
+
+    assert refused.status_code == 409 and "consent" in refused.json()["detail"]
+    assert other_rep.status_code == 404 and unknown.status_code == 404
+    assert not_audio.status_code == 422
+    assert recordings.saved == [] and publisher.events == []

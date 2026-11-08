@@ -74,12 +74,26 @@ pipeline behaves, not how it performs for a real brokerage. Full reports are in 
 
 | Check | Cases | Result |
 |---|---|---|
-| Retrieval recall@5 / MRR / nDCG@10 | 15 queries | 1.0 / 1.0 / 1.0 (the set is too small to separate setups) |
 | SQL guard blocks unsafe queries | 50 attacks, 24 valid | precision 1.0, recall 1.0 |
-| Grounding check rejects unsupported numbers | 30 answers | precision 0.93, recall 0.93 |
+| Grounding check rejects unsupported numbers | 30 answers | precision 1.0, recall 1.0 |
+| Non-answer detector ("the documents don't mention it") | 63 replies, 49 from real Gemini runs | precision 1.0, recall 1.0 |
 
-The grounding check's two misses are real limits of number matching: "8%" passed because
-"8 years" was in the evidence, and "5.2M" was rejected because the evidence says "5,200,000".
+Retrieval on 40 queries (paraphrases, typos, unit codes, Arabic, cross-lingual):
+
+| Metric | Hashing embedder (CI) | all-MiniLM-L6-v2 + TinyBERT | bge-m3 + bge-reranker-v2-m3 (production) |
+|---|---|---|---|
+| Recall@5 | 0.91 | 0.93 | 1.00 |
+| MRR | 0.80 | 0.90 | 1.00 |
+| Cross-lingual recall@5 | 0.60 | 0.40 | 1.00 |
+| Typo recall@5 | 0.50 | 1.00 | 1.00 |
+
+There are only 7 demo documents, so the production models saturate; a real document set is
+needed to tell them apart. CI gates the SQL guard, grounding and non-answer scores
+(`evals/offline_thresholds.json`) and the hashing-embedder retrieval scores.
+
+The first grounding run missed 2 of 30: "8%" passed because "8 years" was in the evidence, and
+"5.2M" was rejected because the evidence says "5,200,000". Numbers now carry their scale
+("5.2M", "3.9 million", "مليون") and percentages must match percentages.
 
 **Answer gate on a real model**, `LLM_PROVIDER=gemini python scripts/run_answer_eval.py`,
 40 cases on `gemini-3.1-flash-lite` (free tier) with small local embedding models:
@@ -99,9 +113,10 @@ The first run found two bugs, both fixed:
 - The text-to-SQL prompt always filtered on available units, so "Is DB-210 still available?"
   couldn't see that it was sold. Questions naming unit codes now return their status.
 
-Still open: Gemini sometimes marks a "not mentioned" reply as answered (3 cases), and
-questions that need judgment, like a competitor's discount, are answered from policy instead of
-escalated. Production uses Anthropic with OpenAI as fallback, and this gate hasn't run on
+The 3 remaining "answered when it should have escalated" cases were replies saying the
+evidence is silent. A rule-based detector now escalates those even when the model marks them
+answered. Re-checking the recorded Gemini replies with it gives 90% pass rate and 100%
+escalation recall; that is a replay of the same replies, not a new model run. Production uses Anthropic with OpenAI as fallback, and this gate hasn't run on
 those models yet.
 
 ## Deploy

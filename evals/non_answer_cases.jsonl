@@ -1,0 +1,63 @@
+{"text": "The Demo Gardens clubhouse includes a gym, two swimming pools, and a kids' area.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The Demo Bay plan requires a 15 percent down payment.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "Yes, reservation fees are refundable within 14 days of payment.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "نعم، يوجد في المشروع حمام سباحة للأطفال.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The price of unit DG-102 is 5,200,000.00 EGP.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The only villa currently available in Demo Bay is unit code DB-310. It features 4 bedrooms, an area of 300.00 sqm, and is priced at 14500000.00 EGP, with a delivery date of 2028-06-01.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The monthly installment for unit DG-102 with a 10% down payment over 8 years (96 months) is 48,750.00.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The provided documentation for Demo Gardens does not mention any helipads on the roofs of the villas.", "non_answer": true, "source": "gemini-before-fixes run"}
+{"text": "Demo Gardens phase one delivers in June 2027.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "Yes, there is an international school planned within a ten minute drive of Demo Gardens.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The provided inventory data for Demo Bay chalets does not contain information regarding whether these units have a sea view.", "non_answer": true, "source": "gemini-before-fixes run"}
+{"text": "The Demo Bay marina opens with the first delivery in September 2027.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "Yes, a rental program is offered to owners who do not live on site at Demo Bay.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The Demo Gardens plan offers installments over 8 years.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "A maintenance deposit of 8 percent is due at delivery for both the Demo Gardens and Demo Bay projects.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "نعم، يمكن للعميل المغترب توقيع العقد من خلال توكيل رسمي من القنصلية المصرية.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "نعم، الوحدة تسلم بتشطيب كامل مع تركيب المطبخ والتكييف.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The area of unit DG-301 is 280.00 square meters.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "DB-210 is not available. The live inventory query returned no units for this code.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The cheapest available unit in Demo Bay is the DB-110 chalet, which is priced at 3,100,000.00 EGP.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The available 3-bedroom unit under 6,000,000 EGP is: Code DG-102, project: Demo Gardens, unit type: apartment, area: 150.00 sqm, price: 5,200,000.00 EGP, delivery date: 2027-06-01.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The units available for delivery in 2028 are unit DG-301 in Demo Gardens (4 bedrooms, 280.00 sqm, delivery date 2028-03-01) and unit DB-310 in Demo Bay (4 bedrooms, 300.00 sqm, delivery date 2028-06-01).", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "There are 3 units available in Demo Gardens.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "سعر الوحدة DB-120 هو 4300000.00 جنيه مصري.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "For unit DG-101, with a 20% down payment of 780000.00 and an installment plan of 60 months (5 years), the monthly installment is 52000.00.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "For unit DB-110, with a 10% down payment of 310,000.00, the installment plan over 5 years (60 installments) is 46,500.00 per month.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "The down payment for unit DB-120 is 430,000.0000 for a 10% payment and 645,000.0000 for a 15% payment.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "There are no available units at Demo Gardens with a delivery date in 2030, so the price per square meter cannot be determined.", "non_answer": true, "source": "gemini-before-fixes run"}
+{"text": "The provided documentation does not contain information regarding the pet policy for chalets at Demo Bay.", "non_answer": true, "source": "gemini-before-fixes run"}
+{"text": "The provided documents do not contain information regarding whether the developer of Demo Bay is listed on the stock exchange.", "non_answer": true, "source": "gemini-before-fixes run"}
+{"text": "According to company policy, any discount above a rep's limit requires approval from the team lead. Please consult with your team lead regarding this request.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "According to the official inventory records, unit DG-102 is priced at 5,200,000.00 EGP. I cannot provide a different price as I must ground my responses strictly in the provided evidence.", "non_answer": false, "source": "gemini-before-fixes run"}
+{"text": "Reservation fees are refundable within 14 days of payment.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The only villa available in Demo Bay is unit code DB-310. It features 4 bedrooms, an area of 300.00 sqm, and is priced at 14500000.00 EGP with a delivery date of 2028-06-01.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The provided documents do not mention a helipad for the villas at Demo Gardens.", "non_answer": true, "source": "gemini-after-fixes run"}
+{"text": "Yes, an international school is planned within a ten minute drive of Demo Gardens.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "Yes, a rental program is offered to owners who do not live at Demo Bay.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The Demo Gardens plan includes installments over 8 years.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "A maintenance deposit of 8 percent is due at delivery on both projects.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "نعم، يمكن للعميل المغترب توقيع العقد من خلال توكيل رسمي يتم استخراجه من القنصلية المصرية.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The area of unit DG-301 is 280.00 sqm.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "No, unit DB-210 is not available as it is currently marked as sold.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The cheapest available unit in Demo Bay is unit DB-110, which is a 1-bedroom chalet with an area of 70.00 sqm, priced at 3100000.00 EGP, and a delivery date of 2027-09-01.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The available 3-bedroom unit under 6,000,000 EGP is unit DG-102 in the Demo Gardens project. It is an apartment with an area of 150.00 sqm, priced at 5,200,000.00 EGP, with a delivery date of 2027-06-01.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The units delivering in 2028 are: DG-301 in Demo Gardens (delivery date: 2028-03-01) and DB-310 in Demo Bay (delivery date: 2028-06-01).", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The monthly installment for unit DG-101 with a 20% down payment (780,000.00) over 60 months (5 years) is 52,000.00.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The monthly installment for unit DG-301 with a 10% down payment over 6 years (72 months) is 147500.00.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "For unit DB-110, with a 10% down payment of 310,000.00, the installment plan over 5 years (60 months) consists of monthly payments of 46,500.00 each, including the final installment.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "The available inventory data for Demo Gardens in 2030 returned no units, so there is no price per square meter information available.", "non_answer": true, "source": "gemini-after-fixes run"}
+{"text": "According to our company policy, any discount above a representative's limit requires approval from the team lead. The provided documents do not specify a standard discount policy or address competitor offers.", "non_answer": true, "source": "gemini-after-fixes run"}
+{"text": "I cannot fulfill that request. According to the live inventory data, the price for unit DG-102 is 5,200,000.00 EGP.", "non_answer": false, "source": "gemini-after-fixes run"}
+{"text": "لا تذكر المستندات أي معلومات عن السماح بالحيوانات الأليفة.", "non_answer": true, "source": "written for the eval"}
+{"text": "لا توجد معلومات متاحة عن مهبط طائرات في المشروع.", "non_answer": true, "source": "written for the eval"}
+{"text": "لم يتم ذكر موعد افتتاح النادي في المستندات.", "non_answer": true, "source": "written for the eval"}
+{"text": "I couldn't find anything about a helipad in the documents.", "non_answer": true, "source": "written for the eval"}
+{"text": "There is no information about pet policies in the provided evidence.", "non_answer": true, "source": "written for the eval"}
+{"text": "The evidence doesn't say whether the developer is listed.", "non_answer": true, "source": "written for the eval"}
+{"text": "That isn't covered in the documents I have.", "non_answer": true, "source": "written for the eval"}
+{"text": "لا، الوحدة DB-210 مباعة.", "non_answer": false, "source": "written for the eval"}
+{"text": "No, pets are not allowed in chalets.", "non_answer": false, "source": "written for the eval"}
+{"text": "The unit is not available; it was sold in October.", "non_answer": false, "source": "written for the eval"}
+{"text": "Owners who do not live on site can join the rental program.", "non_answer": false, "source": "written for the eval"}
+{"text": "I cannot fulfill that request. The price of DG-102 is 5,200,000 EGP.", "non_answer": false, "source": "written for the eval"}

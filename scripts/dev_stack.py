@@ -81,9 +81,7 @@ async def main(reset: bool) -> None:
             "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
         ),
         "EMBEDDING_DIM": os.environ.get("EMBEDDING_DIM", "384"),
-        "RERANKER_MODEL": os.environ.get(
-            "RERANKER_MODEL", "cross-encoder/ms-marco-TinyBERT-L2-v2"
-        ),
+        "RERANKER_MODEL": os.environ.get("RERANKER_MODEL", "cross-encoder/ms-marco-TinyBERT-L2-v2"),
         "DATABASE_URL": sync_url,
         "ASYNC_DATABASE_URL": async_url,
         "INVENTORY_READ_ONLY_DATABASE_URL": reader_url,

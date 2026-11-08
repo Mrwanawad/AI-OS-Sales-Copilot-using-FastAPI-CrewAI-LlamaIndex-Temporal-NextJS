@@ -32,6 +32,8 @@ jobs:
       - run: uv run pytest
       - name: Retrieval release gate
         run: uv run python scripts/run_eval.py
+      - name: SQL guard, grounding and non-answer gates
+        run: uv run python scripts/run_offline_evals.py --gate --output /tmp/offline-evals
 
   frontend:
     runs-on: ubuntu-latest

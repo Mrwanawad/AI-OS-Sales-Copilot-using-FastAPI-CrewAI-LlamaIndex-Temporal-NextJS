@@ -5,14 +5,18 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile
 from pydantic import BaseModel, ValidationError
 
-from ai_os.modules.crm_copilot.domain.models import ContextCard, LeadStage
-from ai_os.modules.crm_copilot.ports.crm import CrmStore, EventPublisher
+from ai_os.modules.crm_copilot.domain.models import ContextCard, InteractionKind, LeadStage
+from ai_os.modules.crm_copilot.ports.crm import CrmStore, EventPublisher, RecordingUploads
 from ai_os.shared.auth import Authenticator, LeadAccess, Principal
 
 _MAX_SIGNATURE_AGE_SECONDS = 300
+_MAX_RECORDING_BYTES = 200 * 1024 * 1024
+_AUDIO_SUFFIXES = frozenset(
+    {".wav", ".mp3", ".m4a", ".ogg", ".oga", ".opus", ".webm", ".flac", ".aac", ".mp4"}
+)
 
 
 class EventType(StrEnum):
@@ -52,6 +56,7 @@ def create_router(
     get_webhook_secret: Callable[[], str | None],
     auth: Authenticator,
     lead_access: LeadAccess,
+    get_recordings: Callable[[], RecordingUploads] | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/crm", tags=["crm"])
 
@@ -86,6 +91,41 @@ def create_router(
         interactions = await store.list_interactions(lead_id)
         latest = max((item.occurred_at for item in interactions), default=None)
         return CardResponse(card=card, stale=card.latest_interaction_at != latest)
+
+    @router.post("/interactions/{interaction_id}/recording", status_code=202)
+    async def upload_recording(
+        interaction_id: str,
+        user: Annotated[Principal, Depends(auth)],
+        store: Annotated[CrmStore, Depends(get_store)],
+        publisher: Annotated[EventPublisher, Depends(get_publisher)],
+        file: Annotated[UploadFile, File()],
+    ) -> dict[str, str]:
+        """For dialers that can't host recordings: stores one and starts transcription."""
+        if get_recordings is None:
+            raise HTTPException(status_code=503, detail="Recording storage is not configured")
+        call = await store.get_interaction(interaction_id)
+        # Unknown ids and other reps' calls look the same, so ids don't leak.
+        if call is None or not await lead_access(user, call.lead_id):
+            raise HTTPException(status_code=404, detail="No such call")
+        if call.kind is not InteractionKind.CALL:
+            raise HTTPException(status_code=409, detail="Only calls have recordings")
+        if not call.recording_consent:
+            # Egypt PDPL: without the client's consent the recording isn't stored at all.
+            raise HTTPException(status_code=409, detail="The client did not consent to recording")
+        name = file.filename or ""
+        if not any(name.lower().endswith(suffix) for suffix in _AUDIO_SUFFIXES):
+            raise HTTPException(status_code=422, detail="Upload an audio file")
+        data = await file.read(_MAX_RECORDING_BYTES + 1)
+        if not data or len(data) > _MAX_RECORDING_BYTES:
+            raise HTTPException(status_code=422, detail="The file is empty or over 200 MB")
+        reference = await get_recordings().put(
+            name, file.content_type or "application/octet-stream", data, user.subject
+        )
+        await store.set_recording(interaction_id, reference)
+        # Keyed on the stored file, so a retried upload of a new file is processed again.
+        event_id = f"recording-{interaction_id}-{reference.rsplit(':', 1)[-1]}"
+        await publisher.publish(event_id, "call_ended", call.lead_id, interaction_id, None, None)
+        return {"status": "accepted"}
 
     @router.post("/webhooks/events", status_code=202)
     async def receive_event(

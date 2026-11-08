@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from ai_os.modules.crm_copilot.domain.models import (
@@ -56,6 +57,10 @@ class FakeCrmStore:
 
     async def list_interactions(self, lead_id: str) -> list[Interaction]:
         return list(self.interactions.values())
+
+    async def set_recording(self, interaction_id: str, reference: str) -> None:
+        current = self.interactions[interaction_id]
+        self.interactions[interaction_id] = replace(current, recording_path=reference)
 
     async def set_interaction_text(self, interaction_id: str, text: str) -> None:
         current = self.interactions[interaction_id]

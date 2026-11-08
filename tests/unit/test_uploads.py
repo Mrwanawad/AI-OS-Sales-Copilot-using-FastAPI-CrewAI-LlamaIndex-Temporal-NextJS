@@ -92,11 +92,21 @@ async def test_upload_stores_the_file_and_starts_ingestion_at_the_next_version()
     upload, files, ingestion = build(FakeVectors({"bay-brochure": 3}))
 
     first = await upload(
-        "bay-brochure", "Demo Bay", DocumentKind.BROCHURE, "b.pdf", "application/pdf", b"%PDF",
+        "bay-brochure",
+        "Demo Bay",
+        DocumentKind.BROCHURE,
+        "b.pdf",
+        "application/pdf",
+        b"%PDF",
         "lead-a",
     )
     second = await upload(
-        "bay-brochure", "Demo Bay", DocumentKind.BROCHURE, "b.pdf", "application/pdf", b"%PDF2",
+        "bay-brochure",
+        "Demo Bay",
+        DocumentKind.BROCHURE,
+        "b.pdf",
+        "application/pdf",
+        b"%PDF2",
         "lead-a",
     )
 

@@ -63,9 +63,7 @@ class Identity:
             return True
         return token_id is not None and await self._store.is_token_revoked(token_id)
 
-    async def create_user(
-        self, subject: str, display_name: str, role: str, password: str
-    ) -> User:
+    async def create_user(self, subject: str, display_name: str, role: str, password: str) -> User:
         subject = subject.strip().lower()
         if not _SUBJECT.match(subject):
             raise InvalidUser("Usernames are 2-64 lowercase letters, digits, '.', '-' or '_'")
