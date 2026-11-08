@@ -1,14 +1,15 @@
 # Checkpoint — AI OS
 
-Last updated: 2026-11-07, during step 9. Full design: `architecture.md`.
+Last updated: 2026-11-08, during step 9. Full design: `architecture.md`.
 
 ## Current State
 - Build steps 1 (scaffold), 2 (Knowledge), 3 (Inventory), 4 (Agent), 5 (CRM Copilot), 6 (Coaching), 7 (Best-time model) and 8 (Escalation and memory loop) of 9 are done. Step 9 is partly done: everything buildable without API keys or your accounts is built, and nothing is deployed.
-- 383 default tests pass. 3 more use `-m models`; the embedding and Docling ones last ran in step 2, the Whisper one in step 5.
-- `scripts/smoke_e2e.py` passes all 84 checks on PGVector: real API and Temporal worker processes, real Postgres, real small models, over HTTP, with scripted LLMs. Qdrant server mode has not been run.
+- 2026-11-08 session: added login, uploads, Postgres file store, webhook notifier, model publishing and the Next.js web app (see Step 9). The new and changed tests pass (unit suite 316 before the session, plus 30+ new unit and 5 new Postgres tests); a final full-suite run was cut short when the C: drive filled up (see Gotchas).
+- 383 default tests passed before this session. 3 more use `-m models`; the embedding and Docling ones last ran in step 2, the Whisper one in step 5.
+- `scripts/smoke_e2e.py` passes all 97 checks (84 before, plus login, logout, upload, worker ingestion from Postgres and re-upload versioning) on PGVector: real API and Temporal worker processes, real Postgres, real small models, over HTTP, with scripted LLMs. Qdrant server mode has not been run.
 - Postgres tests run on an embedded Postgres 16 with pgvector (`pgserver`, dev dependency), or on `TEST_DATABASE_URL` when set. Docker is not needed.
 - `ruff check` and all 6 `lint-imports` contracts pass.
-- No git repository exists and nothing is committed. CI has never run.
+- Local git repository on `main`, 2 commits, authored by Mrwan only. Not pushed; CI has never run. GitHub `AIOS-CRM-Copilot` holds an older, different version.
 - No API keys are available yet, so no successful LLM call has run.
 
 ## Decisions
@@ -90,28 +91,34 @@ Last updated: 2026-11-07, during step 9. Full design: `architecture.md`.
 - **API:** `/escalations/*`. The queue and reviews need team lead or manager; reps see their own tickets at `/escalations/mine`.
 
 ### Step 9: Partly done
-- **Auth:** signed tokens (HS256, expiry required) carry identity and role on every route but `/health` and the HMAC-signed webhook. Roles and names in request bodies are ignored. The API stays closed if `AUTH_SECRET` is missing or short. `scripts/issue_token.py` issues tokens, since there is no login yet.
+- **Auth:** signed tokens (HS256, expiry required, unique `jti`) carry identity and role on every route but `/health`, `/auth/login` and the HMAC-signed webhook. Roles and names in request bodies are ignored. The API stays closed if `AUTH_SECRET` is missing or short. `AUTH_PREVIOUS_SECRET` is accepted during rotation.
+- **Accounts (`identity` module):** scrypt password hashes, `/auth/login`, `/auth/logout` (revokes that token), `/auth/me`, `/auth/password`. Managers create, disable, enable and reset users and end sessions. 5 failures lock an account for 15 minutes. Unknown users, disabled users and tokens issued before a reset are refused. `scripts/create_user.py` makes the first manager; `seed_demo.py` creates demo logins when `DEMO_PASSWORD` is set.
+- **Uploads:** `POST /knowledge/documents` (team lead or manager) stores the file in Postgres (`stored_files`), reserves the next version atomically (`knowledge_documents`), and starts `IngestDocumentWorkflow` with `stored:<id>`. The worker copies it to a temp file. Status at `/knowledge/documents/{id}/versions/{v}`. Call recordings can use `stored:` references too. The API and worker need no shared disk.
+- **Best-time model:** `train_best_time.py --publish` stores a promoted model as `stored:best-time-champion`; the API and worker check its hash every 10 minutes and reload it. Render cron retrains weekly (Fridays 01:00 UTC).
+- **Escalation push:** `ESCALATION_WEBHOOK_URL` gets HMAC-signed `escalation.opened` and `escalation.answered` events with ids and a link, never the question or answer. Failures are logged; the ticket stays in the queue.
+- **Web app (`frontend/`):** Next.js 16, login, workspace (leads, agent chat with citations, context card), escalation queue and knowledge approvals, document upload with status polling. `npm run build` passes. CI job added.
 - **Migrations:** Alembic in `migrations/`. A test proves upgrade, no drift from the code, and downgrade.
 - **Demo data:** `demo_data/` holds invented projects, units and clients. `scripts/seed_demo.py` loads them through the real pipeline.
 - **Retrieval gate:** `scripts/run_eval.py` fails below `evals/thresholds.json`, and CI runs it with a hashing embedder.
 - **Answer gate:** `scripts/run_answer_eval.py` and `evals/gold_answers.jsonl`, written but never run: it needs keys.
 - **Tracing:** Langfuse through PydanticAI, off without keys. Prompts stay out of traces by default.
-- **Packaging:** `Dockerfile`, `docker-compose.yml`, `render.yaml`. None has been built or run.
+- **Packaging:** `Dockerfile`, `docker-compose.yml`, `render.yaml` (API, worker, two cron jobs, Qdrant). Linux now gets CPU-only PyTorch, so no CUDA wheels. The image built once on 2026-11-08 but filled the disk; the compose stack has not been run.
 
 ## Due
 
 ### Build Steps
-- [ ] 9. Remaining: run the answer gate with keys, replace synthetic gold sets with team-lead-graded ones, decide on Ragas, build and run the Docker stack, deploy to Render and Vercel.
-- [ ] Next.js frontend (chat, CRM sidebar). Not started, and has no assigned step.
-- [ ] Document upload route. Ingestion only starts from code today, with a file path the worker can read.
+- [ ] 9. Remaining: run the answer gate with keys, replace synthetic gold sets with team-lead-graded ones, decide on Ragas, run the Docker stack, push to GitHub, deploy to Render and Vercel.
+- [x] Next.js frontend. Done 2026-11-08; not yet tried against a live API with real LLM answers.
+- [x] Document upload route. Done 2026-11-08.
+- [ ] Re-run the full test suite once disk space is back.
 
 ### Must Fix Before Deploying
-- [ ] No login or SSO issues tokens yet, and tokens can't be revoked before they expire. Secret rotation logs everyone out.
+- [x] Login, logout, session revocation and secret rotation. SSO is still not built.
 - [ ] Discount limits in `src/ai_os/shared/config.py` (2%, 5%, 10%) are invented placeholders. Replace them with the brokerage's real policy.
 - [ ] The calling window in `best_time/application/recommend.py` (09:00 to 21:00, all week) is a placeholder. Replace it with the brokerage's policy.
-- [ ] The trained model file must reach both the API and the worker, and retraining isn't scheduled.
-- [ ] Tickets wait in a queue: nothing pushes them to team leads, and reps must check `/escalations/mine` for answers. `QueueOnlyNotifier` is where WhatsApp or email plugs in.
-- [ ] The API and Temporal worker pass files by path, so separate Render services need shared storage.
+- [x] Model reaches API and worker through Postgres; weekly retrain on Render cron.
+- [x] Ticket push through a signed webhook. Still needs a receiver (n8n, Zapier or a WhatsApp gateway) chosen and set up.
+- [x] Files go through Postgres. Uploads are capped at 50 MB; move to object storage (S3 or R2) behind the same port if recordings get large.
 
 ### Not Yet Verified
 - [ ] OpenAI path against the real API. `api.openai.com` did not resolve from this machine.
@@ -189,6 +196,7 @@ Network from this machine has intermittent DNS failures. If `uv` fails with `dns
 - Approved answers don't expire, so one quoting a price can go stale until someone revokes it.
 
 ## Gotchas
+- 2026-11-08: the first Docker build used `chown -R app /app`, which copied the whole venv into a second layer. Docker's disk (`docker_data.vhdx`, 36.6 GB) filled the C: drive and Docker reported I/O errors. Docker and WSL were shut down. The `chown` is removed from the Dockerfile. Before building again, prune Docker and compact its disk.
 - LlamaIndex overwrites a `document_id` metadata key with its own reference ID, so the store uses `source_document_id`.
 - Qdrant's `scroll` defaults to 10 points, so `active_version` passes an explicit limit.
 - CrewAI's `LLM` has no provider failover, so the agent module must retry with OpenAI itself.
