@@ -109,3 +109,30 @@ async def test_reps_reach_only_their_own_leads() -> None:
     assert not await can_access_lead(store, Principal("rep-b", Role.REP), "L1")
     assert not await can_access_lead(store, Principal("rep-a", Role.REP), "unknown")
     assert await can_access_lead(store, Principal("lead-a", Role.TEAM_LEAD), "L1")
+
+
+def test_previous_secret_is_accepted_during_rotation_and_unknown_ones_are_not() -> None:
+    old = "the-old-secret-that-is-long-enough-for-hs256"
+    rotating = client(Authenticator(lambda: SECRET, get_previous_secret=lambda: old))
+    token = issue_token(old, "rep-a", Role.REP)
+
+    assert rotating.get("/me", headers=with_token(token)).status_code == 200
+    assert client().get("/me", headers=with_token(token)).status_code == 401
+
+
+def test_revoked_sessions_are_refused() -> None:
+    class RevokeRepB:
+        async def is_revoked(self, principal: Principal) -> bool:
+            return principal.subject == "rep-b"
+
+    guarded = client(Authenticator(lambda: SECRET, lambda: RevokeRepB()))
+
+    assert guarded.get("/me", headers=bearer("rep-a")).status_code == 200
+    assert guarded.get("/me", headers=bearer("rep-b")).status_code == 401
+
+
+def test_tokens_carry_a_unique_id() -> None:
+    first = jwt.decode(issue_token(SECRET, "rep-a", Role.REP), SECRET, algorithms=["HS256"])
+    second = jwt.decode(issue_token(SECRET, "rep-a", Role.REP), SECRET, algorithms=["HS256"])
+
+    assert first["jti"] != second["jti"]

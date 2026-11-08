@@ -1,4 +1,5 @@
-from collections.abc import Callable, Sequence
+import inspect
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -41,7 +42,8 @@ def rank_slots(
 class RecommendBestTime:
     def __init__(
         self,
-        get_model: Callable[[], AnswerModel | None],
+        # May be async, so a model stored in the database can be reloaded when it changes.
+        get_model: Callable[[], AnswerModel | None | Awaitable[AnswerModel | None]],
         history: CallHistory,
         tz: ZoneInfo,
         now: Callable[[], datetime],
@@ -56,6 +58,8 @@ class RecommendBestTime:
     async def __call__(self, lead_id: str) -> BestTimeRecommendation | None:
         """None when no model has passed the promotion gate yet."""
         model = self._get_model()
+        if inspect.isawaitable(model):
+            model = await model
         if model is None:
             return None
         calls = sorted(await self._history.calls_for(lead_id), key=lambda call: call.at)

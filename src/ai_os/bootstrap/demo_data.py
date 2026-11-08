@@ -16,6 +16,8 @@ from ai_os.modules.crm_copilot.domain.models import (
     Lead,
     LeadStage,
 )
+from ai_os.modules.identity.application.service import Identity
+from ai_os.modules.identity.domain.errors import UserAlreadyExists
 from ai_os.modules.inventory.domain.models import Unit, UnitStatus
 from ai_os.modules.inventory.ports.store import UnitStore
 from ai_os.modules.knowledge.application.ingest import IngestDocument
@@ -23,6 +25,25 @@ from ai_os.modules.knowledge.domain.models import DocumentKind, SourceDocument
 
 DEMO_DATA = Path(__file__).parents[3] / "demo_data"
 _PRICE_SHEETS = {"Demo Gardens": "demo-gardens-prices", "Demo Bay": "demo-bay-prices"}
+# The reps match the assigned_rep values in leads.json.
+DEMO_USERS = (
+    ("rep-a", "Rep A", "rep"),
+    ("rep-b", "Rep B", "rep"),
+    ("lead-a", "Team Lead A", "team_lead"),
+    ("manager-a", "Manager A", "manager"),
+)
+
+
+async def seed_users(identity: Identity, password: str) -> int:
+    """Creates the demo logins with one shared password. Returns how many were new."""
+    created = 0
+    for subject, name, role in DEMO_USERS:
+        try:
+            await identity.create_user(subject, name, role, password)
+            created += 1
+        except UserAlreadyExists:
+            continue
+    return created
 
 
 def load_units(directory: Path = DEMO_DATA) -> list[Unit]:

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from ai_os.modules.crm_copilot.adapters.inbound.api import create_router, sign
 from ai_os.modules.crm_copilot.domain.models import ContextCard
+from ai_os.shared.auth import Role
 
 from .auth_helpers import AUTH, allow_all, bearer, deny_all
 from .crm_fakes import LEAD, NOW, FakeCrmStore, call
@@ -131,3 +132,14 @@ def test_card_is_returned_with_staleness() -> None:
 
 def test_lead_without_card_is_404() -> None:
     assert client().get("/crm/leads/L1/card", headers=auth()).status_code == 404
+
+
+def test_reps_list_their_own_leads_and_team_leads_list_all() -> None:
+    store = FakeCrmStore()
+    other_rep = client(store).get("/crm/leads", headers=bearer("rep-z"))
+    team_lead = client(store).get("/crm/leads", headers=bearer("lead-a", Role.TEAM_LEAD))
+    own = client(store).get("/crm/leads", headers=bearer(LEAD.assigned_rep))
+
+    assert other_rep.json() == []
+    assert [lead["id"] for lead in team_lead.json()] == [LEAD.id]
+    assert own.json()[0]["stage"] == LEAD.stage.value

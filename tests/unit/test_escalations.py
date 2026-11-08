@@ -91,9 +91,13 @@ class FakePublisher:
 class FakeNotifier:
     def __init__(self) -> None:
         self.opened: list[str] = []
+        self.answered: list[str] = []
 
     async def ticket_opened(self, ticket: Ticket) -> None:
         self.opened.append(ticket.id)
+
+    async def ticket_answered(self, ticket: Ticket) -> None:
+        self.answered.append(ticket.id)
 
 
 def build(publisher: FakePublisher | None = None) -> tuple[Escalations, FakeStore, FakePublisher]:

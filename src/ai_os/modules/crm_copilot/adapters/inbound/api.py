@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ValidationError
 
-from ai_os.modules.crm_copilot.domain.models import ContextCard
+from ai_os.modules.crm_copilot.domain.models import ContextCard, LeadStage
 from ai_os.modules.crm_copilot.ports.crm import CrmStore, EventPublisher
 from ai_os.shared.auth import Authenticator, LeadAccess, Principal
 
@@ -30,6 +30,13 @@ class CrmWebhookEvent(BaseModel):
     to_rep: str | None = None
 
 
+class LeadSummary(BaseModel):
+    id: str
+    display_name: str
+    stage: LeadStage
+    assigned_rep: str
+
+
 class CardResponse(BaseModel):
     card: ContextCard
     stale: bool
@@ -47,6 +54,23 @@ def create_router(
     lead_access: LeadAccess,
 ) -> APIRouter:
     router = APIRouter(prefix="/crm", tags=["crm"])
+
+    @router.get("/leads")
+    async def list_leads(
+        user: Annotated[Principal, Depends(auth)],
+        store: Annotated[CrmStore, Depends(get_store)],
+    ) -> list[LeadSummary]:
+        # Same rule as card access: reps see their own leads, team leads see all.
+        rep = None if user.leads_a_team else user.subject
+        return [
+            LeadSummary(
+                id=lead.id,
+                display_name=lead.display_name,
+                stage=lead.stage,
+                assigned_rep=lead.assigned_rep,
+            )
+            for lead in await store.list_leads(rep, 500)
+        ]
 
     @router.get("/leads/{lead_id}/card")
     async def get_card(

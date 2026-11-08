@@ -10,8 +10,7 @@ x-app: &app
     QDRANT_URL: http://qdrant:6333
     TEMPORAL_ADDRESS: temporal:7233
   volumes:
-    # The API and worker exchange uploaded files and share downloaded model weights.
-    - uploads:/data/uploads
+    # Shares downloaded model weights. Uploaded files live in Postgres.
     - models:/home/app/.cache
 
 services:
@@ -80,5 +79,4 @@ services:
 volumes:
   postgres:
   qdrant:
-  uploads:
   models:

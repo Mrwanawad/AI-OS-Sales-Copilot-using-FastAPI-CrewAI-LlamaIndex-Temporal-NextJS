@@ -1,4 +1,6 @@
-# Render blueprint. Not deployed yet. Set every `sync: false` value in the dashboard.
+# Render blueprint. Set every `sync: false` value in the dashboard.
+# Uploads are stored in Postgres, so the API and worker need no shared disk.
+# The web app (frontend/) deploys to Vercel with NEXT_PUBLIC_API_URL set to this API's URL.
 # The bge models need several GB of memory, so choose plans after measuring on the demo.
 databases:
   - name: ai-os-db
@@ -15,6 +17,11 @@ services:
     preDeployCommand: alembic upgrade head
     envVars: &app-env
       - {key: AUTH_SECRET, sync: false}
+      - {key: AUTH_PREVIOUS_SECRET, sync: false}
+      - {key: APP_URL, sync: false}
+      - {key: CORS_ORIGINS, sync: false}
+      - {key: ESCALATION_WEBHOOK_URL, sync: false}
+      - {key: ESCALATION_WEBHOOK_SECRET, sync: false}
       - {key: CRM_WEBHOOK_SECRET, sync: false}
       - {key: ANTHROPIC_API_KEY, sync: false}
       - {key: OPENAI_API_KEY, sync: false}
@@ -22,6 +29,8 @@ services:
       - {key: ASYNC_DATABASE_URL, sync: false}
       - {key: INVENTORY_READ_ONLY_DATABASE_URL, sync: false}
       - {key: TEMPORAL_ADDRESS, sync: false}
+      # Written by the retrain job below; the API and worker reload it when it changes.
+      - {key: BEST_TIME_MODEL_PATH, value: "stored:best-time-champion"}
       - key: QDRANT_URL
         fromService: {type: pserv, name: ai-os-qdrant, property: hostport}
 
@@ -29,6 +38,23 @@ services:
     name: ai-os-worker
     runtime: docker
     dockerCommand: python -m ai_os.bootstrap.worker
+    envVars: *app-env
+
+  # Retrains on real CRM calls and publishes only if the model beats the baseline.
+  - type: cron
+    name: ai-os-retrain-best-time
+    runtime: docker
+    schedule: "0 1 * * 5"  # Fridays 01:00 UTC, the start of the Egyptian weekend
+    dockerCommand: >-
+      python scripts/train_best_time.py --output /tmp/best_time.txt --publish
+      --tracking-uri sqlite:////tmp/mlflow.db
+    envVars: *app-env
+
+  - type: cron
+    name: ai-os-purge-revoked-tokens
+    runtime: docker
+    schedule: "30 0 * * *"
+    dockerCommand: python scripts/purge_revoked_tokens.py
     envVars: *app-env
 
   - type: pserv

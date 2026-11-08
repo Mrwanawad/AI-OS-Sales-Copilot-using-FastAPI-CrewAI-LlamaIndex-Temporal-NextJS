@@ -98,6 +98,7 @@ class Escalations:
             closed_at=self._now(),
         )
         await self._move_ticket(answered, TicketStatus.OPEN)
+        await self._notifier.ticket_answered(answered)
         if not share_with_project:
             return answered, None
         candidate = KnowledgeCandidate(

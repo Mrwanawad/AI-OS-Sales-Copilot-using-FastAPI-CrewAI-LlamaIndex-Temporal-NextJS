@@ -60,13 +60,20 @@ class Settings(BaseSettings):
     crm_webhook_secret: SecretStr | None = None
     # Signs API tokens. At least 32 characters. The API stays closed without it.
     auth_secret: SecretStr | None = None
+    # Set to the old AUTH_SECRET while rotating, until tokens it signed have expired.
+    auth_previous_secret: SecretStr | None = None
+    auth_token_hours: int = 8
+
+    # Ticket events are POSTed here, signed like the CRM webhook. Without it, tickets only queue.
+    escalation_webhook_url: str | None = None
+    escalation_webhook_secret: SecretStr | None = None
+    # Where the web app runs, for links in notifications and CORS.
+    app_url: str | None = None
+    # Extra comma-separated browser origins allowed to call the API, e.g. Vercel previews.
+    cors_origins: str | None = None
 
     elevenlabs_api_key: SecretStr | None = None
     elevenlabs_voice_id: str | None = None
-
-    business_timezone: str = "Africa/Cairo"
-    # Written by scripts/train_best_time.py. Cards omit the estimate until it exists.
-    best_time_model_path: str | None = None
 
     business_timezone: str = "Africa/Cairo"
     # Written by scripts/train_best_time.py. Cards omit the estimate until it exists.

@@ -6,10 +6,12 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "anthropic>=0.108,<1",
     "fastapi>=0.162.1",
+    "httpx>=0.28.1",
     "pydantic>=2.11.9",
     "pydantic-ai-slim[anthropic,openai]>=2.31.1",
     "pydantic-settings>=2.10",
     "pyjwt>=2.15.1",
+    "python-multipart>=0.0.20",
     "uvicorn>=0.54.0",
 ]
 
@@ -21,6 +23,7 @@ retrieval = [
     "llama-index-vector-stores-qdrant",
     "qdrant-client",
     "sentence-transformers",
+    "torch",
 ]
 workflows = [
     "temporalio",
@@ -36,6 +39,7 @@ ingestion = [
     "openpyxl",
     "pandas",
     "pandera",
+    "torchvision",
 ]
 arabic = [
     "camel-tools",
@@ -44,6 +48,7 @@ speech = [
     "elevenlabs",
     "openai-whisper",
     "pyannote-audio",
+    "torchaudio",
 ]
 ml = [
     "lifelines",
@@ -102,6 +107,7 @@ containers = [
     "ai_os.modules.coaching",
     "ai_os.modules.best_time",
     "ai_os.modules.escalation",
+    "ai_os.modules.identity",
 ]
 
 [[tool.importlinter.contracts]]
@@ -115,6 +121,7 @@ modules = [
     "ai_os.modules.coaching",
     "ai_os.modules.best_time",
     "ai_os.modules.escalation",
+    "ai_os.modules.identity",
 ]
 
 [[tool.importlinter.contracts]]
@@ -190,3 +197,14 @@ dev = [
     "pytest-asyncio>=1.4.1.post1",
     "ruff>=0.17.4",
 ]
+
+# The Docker image runs on CPU hosts, so Linux gets CPU-only PyTorch instead of CUDA wheels.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

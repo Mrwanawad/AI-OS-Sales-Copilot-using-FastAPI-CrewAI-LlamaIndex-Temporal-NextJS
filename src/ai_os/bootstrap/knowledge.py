@@ -27,9 +27,11 @@ def build_store(settings: Settings) -> LlamaIndexVectorStore:
     return LlamaIndexVectorStore(store, embedder)
 
 
-def build_retrieve(settings: Settings) -> RetrieveKnowledge:
+def build_retrieve(
+    settings: Settings, store: LlamaIndexVectorStore | None = None
+) -> RetrieveKnowledge:
     reranker = CrossEncoderReranker(CrossEncoder(settings.reranker_model))
-    return RetrieveKnowledge(build_store(settings), reranker)
+    return RetrieveKnowledge(store or build_store(settings), reranker)
 
 
 def build_ingest(settings: Settings) -> IngestDocument:

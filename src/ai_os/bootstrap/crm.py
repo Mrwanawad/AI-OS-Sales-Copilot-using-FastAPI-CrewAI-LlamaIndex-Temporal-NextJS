@@ -19,7 +19,7 @@ from ai_os.modules.crm_copilot.application.handover import BuildHandover
 from ai_os.modules.crm_copilot.application.post_call import ProcessPostCall
 from ai_os.modules.crm_copilot.application.process_call import ProcessCallRecording
 from ai_os.modules.crm_copilot.domain.models import MatchedUnit, Preferences
-from ai_os.modules.crm_copilot.ports.crm import CrmStore
+from ai_os.modules.crm_copilot.ports.crm import CrmStore, RecordingFiles
 from ai_os.modules.inventory.ports.store import UnitStore
 from ai_os.shared.config import Settings
 from ai_os.shared.llm.pydantic_ai_adapter import PydanticAIStructuredLLM, build_model
@@ -80,7 +80,9 @@ def build_crm_store(settings: Settings) -> PostgresCrmStore:
     return PostgresCrmStore(create_async_engine(settings.async_database_url))
 
 
-def build_crm_activities(settings: Settings, store: CrmStore, units: UnitStore) -> CrmActivities:
+def build_crm_activities(
+    settings: Settings, store: CrmStore, units: UnitStore, files: RecordingFiles | None = None
+) -> CrmActivities:
     # Keys are read when a model is first used, so ingestion still runs on a worker without them.
     llm = PydanticAIStructuredLLM(partial(build_model, settings))
     token = settings.hugging_face_token.get_secret_value() if settings.hugging_face_token else None
@@ -90,7 +92,7 @@ def build_crm_activities(settings: Settings, store: CrmStore, units: UnitStore) 
         build_recommend(settings, store), ZoneInfo(settings.business_timezone)
     )
     return CrmActivities(
-        ProcessCallRecording(store, transcriber, diarizer),
+        ProcessCallRecording(store, transcriber, diarizer, files),
         BuildContextCard(llm, store, InventoryUnitMatcher(units), utc_now, best_time=best_time),
         ProcessPostCall(llm, store, utc_now),
         BuildHandover(llm, store, utc_now),

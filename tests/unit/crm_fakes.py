@@ -46,6 +46,11 @@ class FakeCrmStore:
     async def get_lead(self, lead_id: str) -> Lead | None:
         return self.lead if self.lead and self.lead.id == lead_id else None
 
+    async def list_leads(self, assigned_rep: str | None, limit: int) -> list[Lead]:
+        if self.lead is None or assigned_rep not in (None, self.lead.assigned_rep):
+            return []
+        return [self.lead][:limit]
+
     async def get_interaction(self, interaction_id: str) -> Interaction | None:
         return self.interactions.get(interaction_id)
 

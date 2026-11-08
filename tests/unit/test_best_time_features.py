@@ -128,3 +128,12 @@ async def test_no_model_means_no_recommendation() -> None:
     recommend = RecommendBestTime(lambda: None, History([]), CAIRO, lambda: NOW)
 
     assert await recommend("L1") is None
+
+
+async def test_model_getter_may_be_async() -> None:
+    async def stored_model() -> PrefersEvening:
+        return PrefersEvening()
+
+    result = await RecommendBestTime(stored_model, History([]), CAIRO, lambda: NOW)("L1")
+
+    assert result is not None and result.slots

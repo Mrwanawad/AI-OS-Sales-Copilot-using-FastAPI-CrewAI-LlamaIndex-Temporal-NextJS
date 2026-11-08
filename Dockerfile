@@ -3,7 +3,7 @@ FROM python:3.12-slim
 # ffmpeg is how Whisper reads call recordings.
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir uv==0.10.9
+RUN pip install --no-cache-dir uv==0.13.7
 
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md* ./
@@ -16,7 +16,8 @@ COPY scripts ./scripts
 RUN uv sync --frozen --no-dev --extra agents --extra retrieval --extra ingestion --extra arabic \
     --extra workflows --extra inventory --extra mcp --extra speech --extra ml --extra observability
 
-RUN useradd --create-home --uid 10001 app && chown -R app /app
+# The app only reads /app; its home holds downloaded model weights.
+RUN useradd --create-home --uid 10001 app
 USER app
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 EXPOSE 8000

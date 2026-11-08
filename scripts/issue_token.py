@@ -1,4 +1,7 @@
-"""Issues an API token for local use and the demo. A real login or SSO replaces this.
+"""Issues an API token without a password, for scripts and local debugging.
+
+Users log in at POST /auth/login. When a database is configured, the API refuses tokens
+for usernames that have no account, so create one first with scripts/create_user.py.
 
 Usage: python scripts/issue_token.py rep-a rep --hours 8
 Reads AUTH_SECRET from the environment or .env.

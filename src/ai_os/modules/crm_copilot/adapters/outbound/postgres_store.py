@@ -113,15 +113,15 @@ class PostgresCrmStore:
                 .mappings()
                 .first()
             )
-        if row is None:
-            return None
-        return Lead(
-            row["id"],
-            row["display_name"],
-            LeadStage(row["stage"]),
-            row["assigned_rep"],
-            dict(row["fields"]),
-        )
+        return _to_lead(row) if row else None
+
+    async def list_leads(self, assigned_rep: str | None, limit: int) -> list[Lead]:
+        query = select(leads).order_by(leads.c.display_name).limit(limit)
+        if assigned_rep is not None:
+            query = query.where(leads.c.assigned_rep == assigned_rep)
+        async with self._engine.connect() as connection:
+            rows = (await connection.execute(query)).mappings().all()
+        return [_to_lead(row) for row in rows]
 
     async def get_interaction(self, interaction_id: str) -> Interaction | None:
         query = select(interactions).where(interactions.c.id == interaction_id)
@@ -230,4 +230,14 @@ def _to_interaction(row: Mapping) -> Interaction:
         recording_path=row["recording_path"],
         recording_consent=row["recording_consent"],
         answered=row["answered"],
+    )
+
+
+def _to_lead(row) -> Lead:
+    return Lead(
+        row["id"],
+        row["display_name"],
+        LeadStage(row["stage"]),
+        row["assigned_rep"],
+        dict(row["fields"]),
     )

@@ -78,6 +78,9 @@ from ai_os.modules.crm_copilot.domain.models import (
 )
 from ai_os.modules.escalation.adapters.outbound.postgres_store import PostgresEscalationStore
 from ai_os.modules.escalation.application.service import Escalations
+from ai_os.modules.identity.adapters.outbound.postgres_store import PostgresUserStore
+from ai_os.modules.identity.domain.models import User
+from ai_os.modules.identity.domain.passwords import hash_password
 from ai_os.modules.inventory.adapters.outbound.postgres_store import PostgresUnitStore
 from ai_os.modules.inventory.adapters.outbound.sql_guard import SqlGlotGuard
 from ai_os.modules.inventory.application.ask import AskInventory, GeneratedSql
@@ -93,6 +96,8 @@ ROOT = Path(__file__).parents[1]
 WEBHOOK_SECRET = "smoke-webhook-secret"
 AUTH_SECRET = "smoke-auth-secret-long-enough-for-hs256"
 NO_TOKEN = {"Authorization": ""}
+PASSWORD = "smoke-password-long-enough"
+USERS = (("rep-a", "rep"), ("rep-b", "rep"), ("lead-a", "team_lead"), ("manager-b", "manager"))
 WHEN = datetime(2026, 11, 1, 10, 0, tzinfo=UTC)
 PORT = 8765
 API = f"http://127.0.0.1:{PORT}"
@@ -150,6 +155,70 @@ async def setup_database(async_url: str) -> str:
     )
     await admin.dispose()
     return make_url(async_url).set(username="inventory_reader").render_as_string(False)
+
+
+async def create_users(async_url: str) -> None:
+    engine = create_async_engine(async_url, poolclass=NullPool)
+    users = PostgresUserStore(engine)
+    hashed = hash_password(PASSWORD)
+    for subject, role in USERS:
+        await users.add(User(subject, subject, role, hashed))
+    await engine.dispose()
+
+
+async def identity_and_uploads_over_http(client: httpx.AsyncClient) -> None:
+    print("\n-- Login, logout and document upload over HTTP")
+    response = await client.post(
+        "/auth/login", json={"username": "lead-a", "password": "wrong"}, headers=NO_TOKEN
+    )
+    check("wrong password is 401", response.status_code == 401, response.text)
+    response = await client.post(
+        "/auth/login", json={"username": "lead-a", "password": PASSWORD}, headers=NO_TOKEN
+    )
+    check("login issues a token", response.status_code == 200, response.text)
+    lead = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    check("me", (await client.get("/auth/me", headers=lead)).json()["role"] == "team_lead")
+    ghost = bearer("ghost", Role.MANAGER)
+    response = await client.get("/auth/me", headers=ghost)
+    check("signed token for an unknown user refused", response.status_code == 401, response.text)
+
+    document = b"# Rooftop gym\n\nThe Demo Tower rooftop gym opens at 6am for residents."
+    form = {"document_id": "tower-faq", "project": "Demo Tower", "kind": "faq"}
+    upload = {"file": ("tower-faq.md", document, "text/markdown")}
+    response = await client.post("/knowledge/documents", data=form, files=upload)
+    check("reps cannot upload", response.status_code == 403, response.text)
+    response = await client.post("/knowledge/documents", data=form, files=upload, headers=lead)
+    check("team lead upload accepted", response.status_code == 202, response.text)
+    status_url = response.json().get("status_url", "")
+    state = None
+    for _ in range(120):
+        state = (await client.get(status_url, headers=lead)).json()
+        if state.get("state") != "running":
+            break
+        await asyncio.sleep(1)
+    check("worker ingested the upload from Postgres", state.get("state") == "completed", state)
+    hits = await search(client, query="When does the rooftop gym open?", project="Demo Tower")
+    check("uploaded document searchable", hits and "6am" in hits[0]["text"], hits)
+
+    form_v2 = {**form}
+    upload_v2 = {"file": ("tower-faq.md", document.replace(b"6am", b"7am"), "text/markdown")}
+    response = await client.post(
+        "/knowledge/documents", data=form_v2, files=upload_v2, headers=lead
+    )
+    check("re-upload is version 2", response.json().get("version") == 2, response.text)
+    for _ in range(120):
+        state = (await client.get(response.json()["status_url"], headers=lead)).json()
+        if state.get("state") != "running":
+            break
+        await asyncio.sleep(1)
+    hits = await search(client, query="When does the rooftop gym open?", project="Demo Tower")
+    texts = " ".join(hit["text"] for hit in hits)
+    check("new version replaces the old", "7am" in texts and "6am" not in texts, texts)
+
+    response = await client.post("/auth/logout", headers=lead)
+    check("logout", response.status_code == 204, response.text)
+    response = await client.get("/auth/me", headers=lead)
+    check("logged-out token refused", response.status_code == 401, response.text)
 
 
 async def wait_for_health(client: httpx.AsyncClient, process: subprocess.Popen) -> float:
@@ -745,6 +814,7 @@ async def main(vector_store: str) -> None:
             check=True,
         )
         reader_url = await setup_database(async_url)
+        await create_users(async_url)
 
         print("Training the best-time model on synthetic calls")
         tz = ZoneInfo("Africa/Cairo")
@@ -807,6 +877,7 @@ async def main(vector_store: str) -> None:
                 seconds = await wait_for_health(client, api)
                 print(f"API healthy after {seconds:.0f}s (vector store: {vector_store})")
                 await scenario(env, client, tmp)
+                await identity_and_uploads_over_http(client)
                 await crm_over_http(env, client, async_url, tmp)
                 await coaching_over_http(client)
                 await memory_loop_over_http(client, async_url)

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 
 # Knowledge under this project applies to every project.
@@ -65,3 +66,28 @@ class IngestResult:
     document_id: str
     version: int
     chunks: int
+
+
+class IngestionState(StrEnum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class IngestionStatus:
+    state: IngestionState
+    chunks: int | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class RegisteredDocument:
+    id: str
+    project: str
+    kind: DocumentKind
+    latest_version: int
+    source: str
+    uploaded_by: str
+    uploaded_at: datetime

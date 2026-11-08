@@ -10,3 +10,6 @@ mlflow.db
 models
 tests
 .env
+frontend
+evals
+*.log

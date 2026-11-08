@@ -7,7 +7,8 @@ from temporalio.common import RetryPolicy
 
 @dataclass(frozen=True)
 class IngestRequest:
-    path: str
+    # `stored:<id>` for uploads, or a path the worker can read.
+    source: str
     document_id: str
     project: str
     kind: str

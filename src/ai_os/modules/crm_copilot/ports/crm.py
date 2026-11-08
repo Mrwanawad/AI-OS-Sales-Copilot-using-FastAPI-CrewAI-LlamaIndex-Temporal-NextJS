@@ -1,4 +1,5 @@
 from collections.abc import Mapping, Sequence
+from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -18,6 +19,10 @@ from ai_os.modules.crm_copilot.domain.models import (
 
 class CrmStore(Protocol):
     async def get_lead(self, lead_id: str) -> Lead | None: ...
+
+    async def list_leads(self, assigned_rep: str | None, limit: int) -> list[Lead]:
+        """All leads when assigned_rep is None."""
+        ...
 
     async def get_interaction(self, interaction_id: str) -> Interaction | None: ...
 
@@ -46,6 +51,12 @@ class Transcriber(Protocol):
 
 class Diarizer(Protocol):
     async def diarize(self, path: Path) -> Sequence[SpeakerTurn]: ...
+
+
+class RecordingFiles(Protocol):
+    def local_copy(self, reference: str) -> AbstractAsyncContextManager[Path]:
+        """Yields a readable local file for a stored recording reference."""
+        ...
 
 
 class UnitMatcher(Protocol):

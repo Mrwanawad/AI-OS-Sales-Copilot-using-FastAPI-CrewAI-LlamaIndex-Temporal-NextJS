@@ -4,10 +4,13 @@ from sqlalchemy import create_engine, pool
 from ai_os.modules.coaching.adapters.outbound.postgres_store import metadata as coaching
 from ai_os.modules.crm_copilot.adapters.outbound.postgres_store import metadata as crm
 from ai_os.modules.escalation.adapters.outbound.postgres_store import metadata as escalation
+from ai_os.modules.identity.adapters.outbound.postgres_store import metadata as identity
 from ai_os.modules.inventory.adapters.outbound.postgres_store import metadata as inventory
+from ai_os.modules.knowledge.adapters.outbound.document_registry import metadata as knowledge
 from ai_os.shared.config import Settings
+from ai_os.shared.files import metadata as files
 
-target_metadata = [inventory, crm, coaching, escalation]
+target_metadata = [inventory, crm, coaching, escalation, knowledge, files, identity]
 
 
 def run_migrations() -> None:
