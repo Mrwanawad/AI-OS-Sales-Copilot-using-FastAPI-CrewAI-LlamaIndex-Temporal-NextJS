@@ -26,6 +26,7 @@ def test_missing_key_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_gemini_provider_uses_one_gemini_model_everywhere() -> None:
+    pytest.importorskip("google.genai", reason="needs the gemini extra")
     from ai_os.shared.llm.crewai_adapter import crew_llms
     from ai_os.shared.llm.pydantic_ai_adapter import build_model
 
