@@ -1,0 +1,38 @@
+# Render blueprint. Not deployed yet. Set every `sync: false` value in the dashboard.
+# The bge models need several GB of memory, so choose plans after measuring on the demo.
+databases:
+  - name: ai-os-db
+    databaseName: ai_os
+    user: ai_os
+    postgresMajorVersion: "17"
+
+services:
+  - type: web
+    name: ai-os-api
+    runtime: docker
+    healthCheckPath: /health
+    # Grant the reader role with deploy/inventory_reader.sql after this first runs.
+    preDeployCommand: alembic upgrade head
+    envVars: &app-env
+      - {key: AUTH_SECRET, sync: false}
+      - {key: CRM_WEBHOOK_SECRET, sync: false}
+      - {key: ANTHROPIC_API_KEY, sync: false}
+      - {key: OPENAI_API_KEY, sync: false}
+      - {key: DATABASE_URL, sync: false}
+      - {key: ASYNC_DATABASE_URL, sync: false}
+      - {key: INVENTORY_READ_ONLY_DATABASE_URL, sync: false}
+      - {key: TEMPORAL_ADDRESS, sync: false}
+      - key: QDRANT_URL
+        fromService: {type: pserv, name: ai-os-qdrant, property: hostport}
+
+  - type: worker
+    name: ai-os-worker
+    runtime: docker
+    dockerCommand: python -m ai_os.bootstrap.worker
+    envVars: *app-env
+
+  - type: pserv
+    name: ai-os-qdrant
+    runtime: image
+    image: {url: docker.io/qdrant/qdrant:v1.13.6}
+    disk: {name: qdrant, mountPath: /qdrant/storage, sizeGB: 10}

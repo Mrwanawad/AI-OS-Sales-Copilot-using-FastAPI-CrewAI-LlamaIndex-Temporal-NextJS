@@ -1,0 +1,192 @@
+[project]
+name = "ai-os"
+version = "0.1.0"
+description = "Sales team-lead clone and CRM copilot for a real estate brokerage"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "anthropic>=0.108,<1",
+    "fastapi>=0.162.1",
+    "pydantic>=2.11.9",
+    "pydantic-ai-slim[anthropic,openai]>=2.31.1",
+    "pydantic-settings>=2.10",
+    "pyjwt>=2.15.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.optional-dependencies]
+retrieval = [
+    "llama-index-core",
+    "llama-index-embeddings-huggingface",
+    "llama-index-vector-stores-postgres",
+    "llama-index-vector-stores-qdrant",
+    "qdrant-client",
+    "sentence-transformers",
+]
+workflows = [
+    "temporalio",
+]
+mcp = [
+    "fastmcp",
+]
+observability = [
+    "langfuse",
+]
+ingestion = [
+    "docling",
+    "openpyxl",
+    "pandas",
+    "pandera",
+]
+arabic = [
+    "camel-tools",
+]
+speech = [
+    "elevenlabs",
+    "openai-whisper",
+    "pyannote-audio",
+]
+ml = [
+    "lifelines",
+    "lightgbm",
+    "mlflow",
+    "optuna",
+]
+eval = [
+    "deepeval",
+    "ragas",
+]
+agents = [
+    "crewai>=1.15.37",
+]
+inventory = [
+    "asyncpg>=0.32.0",
+    "sqlalchemy>=2.0.57",
+    "sqlglot>=30.30.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_os"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-m 'not models'"
+markers = ["models: downloads real model weights"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.importlinter]
+root_package = "ai_os"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Module layers point inward"
+type = "layers"
+layers = ["adapters", "application", "ports", "domain"]
+containers = [
+    "ai_os.modules.agent",
+    "ai_os.modules.knowledge",
+    "ai_os.modules.inventory",
+    "ai_os.modules.crm_copilot",
+    "ai_os.modules.coaching",
+    "ai_os.modules.best_time",
+    "ai_os.modules.escalation",
+]
+
+[[tool.importlinter.contracts]]
+name = "Modules do not import each other"
+type = "independence"
+modules = [
+    "ai_os.modules.agent",
+    "ai_os.modules.knowledge",
+    "ai_os.modules.inventory",
+    "ai_os.modules.crm_copilot",
+    "ai_os.modules.coaching",
+    "ai_os.modules.best_time",
+    "ai_os.modules.escalation",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain stays free of frameworks and vendors"
+type = "forbidden"
+source_modules = ["ai_os.modules.*.domain"]
+forbidden_modules = [
+    "fastapi",
+    "crewai",
+    "pydantic_ai",
+    "llama_index",
+    "qdrant_client",
+    "temporalio",
+    "anthropic",
+    "openai",
+    "docling",
+    "sentence_transformers",
+    "pandas",
+    "pandera",
+    "camel_tools",
+    "whisper",
+    "elevenlabs",
+    "lightgbm",
+    "lifelines",
+    "optuna",
+    "mlflow",
+    "pyannote",
+    "sqlalchemy",
+    "ai_os.shared.llm",
+]
+
+[[tool.importlinter.contracts]]
+name = "Retrieval and parsing vendors stay in adapters"
+type = "forbidden"
+source_modules = ["ai_os.modules.*.application", "ai_os.modules.*.ports"]
+forbidden_modules = [
+    "llama_index",
+    "qdrant_client",
+    "docling",
+    "sentence_transformers",
+    "pandas",
+    "pandera",
+    "camel_tools",
+    "whisper",
+    "elevenlabs",
+    "lightgbm",
+    "lifelines",
+    "optuna",
+    "mlflow",
+    "pyannote",
+    "sqlalchemy",
+]
+
+[[tool.importlinter.contracts]]
+name = "Shared does not import modules or bootstrap"
+type = "forbidden"
+source_modules = ["ai_os.shared"]
+forbidden_modules = ["ai_os.modules", "ai_os.bootstrap"]
+
+[[tool.importlinter.contracts]]
+name = "Modules do not import bootstrap"
+type = "forbidden"
+source_modules = ["ai_os.modules"]
+forbidden_modules = ["ai_os.bootstrap"]
+
+[dependency-groups]
+dev = [
+    "alembic>=1.20.1",
+    "httpx>=0.28.1",
+    "import-linter>=2.16",
+    "pgserver>=0.1.4",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "ruff>=0.17.4",
+]

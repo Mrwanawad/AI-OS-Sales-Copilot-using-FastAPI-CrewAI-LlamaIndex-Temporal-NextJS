@@ -1,0 +1,7 @@
+[
+  {"file": "demo_gardens_brochure.md", "id": "demo-gardens-brochure", "project": "Demo Gardens", "kind": "brochure"},
+  {"file": "demo_bay_brochure.md", "id": "demo-bay-brochure", "project": "Demo Bay", "kind": "brochure"},
+  {"file": "payment_plans.md", "id": "payment-plans", "project": "general", "kind": "payment_plan"},
+  {"file": "company_policy.md", "id": "company-policy", "project": "general", "kind": "policy"},
+  {"file": "faq_ar.md", "id": "faq-arabic", "project": "general", "kind": "faq"}
+]

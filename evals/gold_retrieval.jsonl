@@ -1,0 +1,15 @@
+{"query": "Does Demo Gardens have a gym and swimming pools?", "relevant": ["demo-gardens-brochure"], "tag": "semantic"}
+{"query": "When does Demo Gardens phase one deliver?", "relevant": ["demo-gardens-brochure"], "tag": "semantic"}
+{"query": "Is there a school near Demo Gardens?", "relevant": ["demo-gardens-brochure"], "tag": "semantic"}
+{"query": "Do Demo Bay chalets have a sea view?", "relevant": ["demo-bay-brochure"], "tag": "semantic"}
+{"query": "Is there a rental program for Demo Bay owners?", "relevant": ["demo-bay-brochure"], "tag": "semantic"}
+{"query": "What down payment does the Demo Bay plan need?", "relevant": ["payment-plans"], "tag": "semantic"}
+{"query": "How much is the maintenance deposit at delivery?", "relevant": ["payment-plans"], "tag": "semantic"}
+{"query": "Are reservation fees refundable?", "relevant": ["company-policy"], "tag": "semantic"}
+{"query": "Who approves a discount above a rep's limit?", "relevant": ["company-policy"], "tag": "semantic"}
+{"query": "DG-102", "relevant": ["demo-gardens-prices"], "tag": "exact_code"}
+{"query": "DB-310 price", "relevant": ["demo-bay-prices"], "tag": "exact_code"}
+{"query": "dg-301", "relevant": ["demo-gardens-prices"], "tag": "exact_code"}
+{"query": "هل يوجد حمام سباحة للأطفال؟", "relevant": ["faq-arabic"], "tag": "arabic"}
+{"query": "توكيل رسمي للعميل المغترب", "relevant": ["faq-arabic"], "tag": "arabic"}
+{"query": "هل الوحده تسلم بتشطيب كامل", "relevant": ["faq-arabic"], "tag": "arabic"}

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "DEMO-LEAD-1", "display_name": "Synthetic Client One", "stage": "qualified", "assigned_rep": "rep-a",
+    "interactions": [
+      {"id": "demo-i1", "kind": "call", "occurred_at": "2026-10-20T15:00:00+00:00", "answered": false, "text": ""},
+      {"id": "demo-i2", "kind": "call", "occurred_at": "2026-10-21T17:30:00+00:00", "answered": true, "text": "Client wants 3 bedrooms in Demo Gardens with a budget of 5500000 EGP. Worried about late delivery."},
+      {"id": "demo-i3", "kind": "whatsapp", "occurred_at": "2026-10-23T11:00:00+00:00", "text": "Rep promised to send the Demo Gardens payment plan by Sunday."}
+    ]
+  },
+  {
+    "id": "DEMO-LEAD-2", "display_name": "عميل تجريبي", "stage": "contacted", "assigned_rep": "rep-b",
+    "interactions": [
+      {"id": "demo-i4", "kind": "whatsapp", "occurred_at": "2026-10-25T18:00:00+00:00", "text": "العميل يبحث عن شاليه غرفتين في ديمو باي وميزانيته 4500000 جنيه."}
+    ]
+  }
+]

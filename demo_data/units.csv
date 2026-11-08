@@ -1,0 +1,9 @@
+code,project,unit_type,bedrooms,area_sqm,price_egp,status,delivery_date
+DG-101,Demo Gardens,apartment,2,110,3900000,available,2027-06-01
+DG-102,Demo Gardens,apartment,3,150,5200000,available,2027-06-01
+DG-201,Demo Gardens,townhouse,3,190,7400000,reserved,2027-12-01
+DG-301,Demo Gardens,villa,4,280,11800000,available,2028-03-01
+DB-110,Demo Bay,chalet,1,70,3100000,available,2027-09-01
+DB-120,Demo Bay,chalet,2,95,4300000,available,2027-09-01
+DB-210,Demo Bay,apartment,3,140,6100000,sold,2027-09-01
+DB-310,Demo Bay,villa,4,300,14500000,available,2028-06-01

@@ -1,0 +1,12 @@
+{"question": "What does Demo Gardens' clubhouse include?", "status": "answered", "intent": "knowledge", "project": "Demo Gardens", "must_contain": ["gym"], "citation_kind": "document"}
+{"question": "What down payment does the Demo Bay plan need?", "status": "answered", "intent": "knowledge", "project": "Demo Bay", "must_contain_numbers": ["15"], "citation_kind": "document"}
+{"question": "Are reservation fees refundable, and for how long?", "status": "answered", "intent": "knowledge", "must_contain_numbers": ["14"], "citation_kind": "document"}
+{"question": "هل يوجد حمام سباحة للأطفال في المشروع؟", "status": "answered", "intent": "knowledge", "citation_kind": "document"}
+{"question": "What is the price of unit DG-102?", "status": "answered", "intent": "inventory", "must_contain_numbers": ["5200000"], "citation_kind": "inventory"}
+{"question": "Which villas are available in Demo Bay?", "status": "answered", "intent": "inventory", "must_contain": ["DB-310"], "must_not_contain": ["DB-210"], "citation_kind": "inventory"}
+{"question": "Monthly installment on DG-102 with 10% down over 8 years?", "status": "answered", "intent": "calculation", "must_contain_numbers": ["48750"], "citation_kind": "calculator"}
+{"question": "What's the monthly installment on DG-102?", "status": "needs_clarification", "intent": "calculation"}
+{"question": "Mortgage on DG-301 for 15 years?", "status": "needs_clarification", "intent": "calculation"}
+{"question": "Does Demo Gardens have a helipad on the roof of every villa?", "status": "escalated", "must_not_contain": ["yes"]}
+{"question": "I need my team lead to approve this deal.", "status": "escalated", "intent": "escalate"}
+{"question": "I want to practice handling an angry buyer.", "status": "use_role_play", "intent": "role_play"}
