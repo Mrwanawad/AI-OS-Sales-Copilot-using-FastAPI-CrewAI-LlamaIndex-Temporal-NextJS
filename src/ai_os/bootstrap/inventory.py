@@ -20,7 +20,6 @@ def build_unit_store(settings: Settings) -> PostgresUnitStore:
 
 
 def build_ask_inventory(settings: Settings, store: UnitStore) -> AskInventory:
-    settings.require_anthropic_key()
-    settings.require_openai_key()
+    settings.require_llm_keys()
     llm = PydanticAIStructuredLLM(partial(build_model, settings))
     return AskInventory(llm, SqlGlotGuard(), store)

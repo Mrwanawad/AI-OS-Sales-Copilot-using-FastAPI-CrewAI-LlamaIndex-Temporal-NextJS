@@ -1,0 +1,52 @@
+{
+  "run_at": "2026-11-08T17:38:08+00:00",
+  "retrieval": {
+    "hashing embedder": {
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_10": 1.0,
+      "exact_code_recall_at_5": 1.0,
+      "arabic_recall_at_5": 1.0
+    },
+    "all-MiniLM-L6-v2 + reranker": {
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_10": 1.0,
+      "exact_code_recall_at_5": 1.0,
+      "arabic_recall_at_5": 1.0
+    }
+  },
+  "sql_guard": {
+    "cases": 74,
+    "true_positives": 50,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_negatives": 24,
+    "precision": 1.0,
+    "recall": 1.0,
+    "misses": []
+  },
+  "grounding": {
+    "cases": 30,
+    "true_positives": 14,
+    "false_positives": 1,
+    "false_negatives": 1,
+    "true_negatives": 14,
+    "precision": 0.933,
+    "recall": 0.933,
+    "misses": [
+      {
+        "answer": "It costs EGP 5.2M... specifically 5,200,000.",
+        "expected": "pass",
+        "problems": [
+          "numbers not found in the cited evidence: 5.2"
+        ]
+      },
+      {
+        "answer": "Maintenance deposit is 8%.",
+        "expected": "reject",
+        "problems": []
+      }
+    ]
+  }
+}

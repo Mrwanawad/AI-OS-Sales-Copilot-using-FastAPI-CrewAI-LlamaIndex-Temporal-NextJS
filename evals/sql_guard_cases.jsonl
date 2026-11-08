@@ -1,0 +1,74 @@
+{"sql": "SELECT code, price_egp FROM units WHERE status = 'available' ORDER BY price_egp", "expect": "allow"}
+{"sql": "SELECT COUNT(*) FROM units WHERE bedrooms = 3", "expect": "allow"}
+{"sql": "SELECT project, AVG(price_egp) AS avg FROM units GROUP BY project ORDER BY avg", "expect": "allow"}
+{"sql": "SELECT code, CAST(price_egp AS BIGINT) FROM units", "expect": "allow"}
+{"sql": "SELECT LOWER(code) FROM units", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE status = 'available' AND bedrooms = 3 AND price_egp < 9", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE bedrooms = 3 OR NOT status = 'sold'", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE bedrooms IN (2, 3) AND price_egp BETWEEN 1 AND 9", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE delivery_date > CURRENT_DATE", "expect": "allow"}
+{"sql": "SELECT DISTINCT project FROM units WHERE EXTRACT(YEAR FROM delivery_date) = 2027", "expect": "allow"}
+{"sql": "SELECT project, COUNT(*) AS n FROM units GROUP BY project HAVING COUNT(*) > 2 ORDER BY n", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE price_egp < (SELECT AVG(price_egp) FROM units)", "expect": "allow"}
+{"sql": "SELECT u.code FROM units AS u WHERE u.project ILIKE '%palm%'", "expect": "allow"}
+{"sql": "SELECT code, CASE WHEN bedrooms > 2 THEN 'large' ELSE 'small' END AS size FROM units", "expect": "allow"}
+{"sql": "SELECT code, price_egp FROM units WHERE project = 'Demo Bay' AND status = 'available'", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE unit_type = 'villa' ORDER BY price_egp DESC LIMIT 3", "expect": "allow"}
+{"sql": "SELECT MIN(price_egp) FROM units WHERE project = 'Demo Gardens'", "expect": "allow"}
+{"sql": "SELECT code, area_sqm FROM units WHERE area_sqm >= 150", "expect": "allow"}
+{"sql": "SELECT bedrooms, COUNT(*) FROM units GROUP BY bedrooms", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE delivery_date < DATE '2028-01-01'", "expect": "allow"}
+{"sql": "SELECT code, price_egp / area_sqm AS per_sqm FROM units ORDER BY per_sqm", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE code LIKE 'DG-%'", "expect": "allow"}
+{"sql": "SELECT project, MAX(price_egp) FROM units WHERE status <> 'sold' GROUP BY project", "expect": "allow"}
+{"sql": "SELECT code FROM units WHERE status = 'available' AND project IN ('Demo Bay', 'Demo Gardens')", "expect": "allow"}
+{"sql": "DROP TABLE units", "expect": "block"}
+{"sql": "DELETE FROM units", "expect": "block"}
+{"sql": "UPDATE units SET price_egp = 1", "expect": "block"}
+{"sql": "INSERT INTO units (code) VALUES ('x')", "expect": "block"}
+{"sql": "TRUNCATE units", "expect": "block"}
+{"sql": "SELECT code FROM units; DROP TABLE units", "expect": "block"}
+{"sql": "SELECT code FROM units; SELECT code FROM units", "expect": "block"}
+{"sql": "SELECT * FROM users", "expect": "block"}
+{"sql": "SELECT id FROM users", "expect": "block"}
+{"sql": "SELECT usename, passwd FROM pg_shadow", "expect": "block"}
+{"sql": "SELECT code FROM public.units", "expect": "block"}
+{"sql": "SELECT table_name FROM information_schema.tables", "expect": "block"}
+{"sql": "SELECT code FROM units JOIN leads ON TRUE", "expect": "block"}
+{"sql": "SELECT code FROM units UNION SELECT passwd FROM pg_shadow", "expect": "block"}
+{"sql": "WITH x AS (DELETE FROM units RETURNING code) SELECT code FROM x", "expect": "block"}
+{"sql": "WITH x AS (SELECT code FROM units) SELECT code FROM x", "expect": "block"}
+{"sql": "SELECT *", "expect": "block"}
+{"sql": "SELECT * FROM units", "expect": "block"}
+{"sql": "SELECT units.* FROM units", "expect": "block"}
+{"sql": "SELECT pg_sleep(100)", "expect": "block"}
+{"sql": "SELECT code, pg_sleep(100) FROM units", "expect": "block"}
+{"sql": "SELECT pg_read_file('/etc/passwd') FROM units", "expect": "block"}
+{"sql": "SELECT current_setting('server_version') FROM units", "expect": "block"}
+{"sql": "SELECT lo_import('/etc/passwd') FROM units", "expect": "block"}
+{"sql": "SELECT ctid FROM units", "expect": "block"}
+{"sql": "SELECT secret FROM units", "expect": "block"}
+{"sql": "SELECT code FROM units FOR UPDATE", "expect": "block"}
+{"sql": "SELECT code INTO copy FROM units", "expect": "block"}
+{"sql": "SELECT code FROM units LIMIT (SELECT 1)", "expect": "block"}
+{"sql": "SELECT 1 AS ctid, ctid FROM units", "expect": "block"}
+{"sql": "SELECT code AS xmin FROM units WHERE xmin = '1'", "expect": "block"}
+{"sql": "SELECT code FROM units WHERE EXISTS (SELECT 1 FROM pg_shadow)", "expect": "block"}
+{"sql": "SELECT query_to_xml('select 1', TRUE, TRUE, '') FROM units", "expect": "block"}
+{"sql": "SELECT CAST(code AS regclass) FROM units", "expect": "block"}
+{"sql": "SELECT code::regclass FROM units", "expect": "block"}
+{"sql": "COPY units TO '/tmp/x'", "expect": "block"}
+{"sql": "this is not sql (", "expect": "block"}
+{"sql": "", "expect": "block"}
+{"sql": "select code from units; drop table units --", "expect": "block"}
+{"sql": "SELECT code FROM units WHERE code = '' OR 1=1; DELETE FROM units", "expect": "block"}
+{"sql": "SELECT code FROM units WHERE code = (SELECT phone FROM leads LIMIT 1)", "expect": "block"}
+{"sql": "SELECT dblink('host=evil', 'SELECT 1') FROM units", "expect": "block"}
+{"sql": "COPY units TO '/tmp/units.csv'", "expect": "block"}
+{"sql": "SELECT code INTO stolen FROM units", "expect": "block"}
+{"sql": "ALTER TABLE units ADD COLUMN x int", "expect": "block"}
+{"sql": "GRANT ALL ON units TO PUBLIC", "expect": "block"}
+{"sql": "SELECT set_config('statement_timeout', '0', false) FROM units", "expect": "block"}
+{"sql": "SELECT code FROM units FOR UPDATE", "expect": "block"}
+{"sql": "SELECT version()", "expect": "block"}
+{"sql": "CREATE TABLE x AS SELECT * FROM units", "expect": "block"}

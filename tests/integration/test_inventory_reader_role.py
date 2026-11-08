@@ -31,6 +31,11 @@ async def reader_store(postgres: PostgresUrls) -> AsyncIterator[PostgresUnitStor
             lines = [li for li in statement.splitlines() if not li.startswith("--")]
             if "".join(lines).strip():
                 await connection.execute(text("\n".join(lines)))
+        password = make_url(postgres.asynchronous).password
+        if password:
+            # Servers with password auth (CI); the embedded server trusts local connections.
+            quoted = password.replace("'", "''")
+            await connection.execute(text(f"ALTER ROLE inventory_reader PASSWORD '{quoted}'"))
 
     reader_url = make_url(postgres.asynchronous).set(username="inventory_reader")
     reader = create_async_engine(reader_url, poolclass=NullPool)

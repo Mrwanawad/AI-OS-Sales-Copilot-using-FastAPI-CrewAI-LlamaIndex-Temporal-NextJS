@@ -18,6 +18,15 @@ from ai_os.shared.llm.port import LLMProviderError, LLMRole, OutputT
 
 
 def build_model(settings: Settings, role: LLMRole) -> Model:
+    if settings.llm_provider == "gemini":
+        # Imported here: google-genai is only installed with the gemini extra.
+        from pydantic_ai.models.google import GoogleModel
+        from pydantic_ai.providers.google import GoogleProvider
+
+        return GoogleModel(
+            settings.gemini_model,
+            provider=GoogleProvider(api_key=settings.require_gemini_key()),
+        )
     route = settings.route_for(role)
     return FallbackModel(
         AnthropicModel(

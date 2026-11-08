@@ -68,6 +68,9 @@ inventory = [
     "sqlalchemy>=2.0.57",
     "sqlglot>=30.30.0",
 ]
+gemini = [
+    "pydantic-ai-slim[google]>=2.31.1",
+]
 
 [build-system]
 requires = ["hatchling"]

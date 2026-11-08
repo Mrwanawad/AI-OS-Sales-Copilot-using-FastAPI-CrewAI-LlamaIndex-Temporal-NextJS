@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     anthropic_answer_model: str = "claude-opus-5-5"
     anthropic_extraction_model: str = "claude-sonnet-5-5"
 
+    # anthropic_openai: Anthropic first, OpenAI as fallback (production).
+    # gemini: Google's free tier, for evaluation runs without paid keys.
+    llm_provider: Literal["anthropic_openai", "gemini"] = "anthropic_openai"
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.1-flash-lite"
+
     openai_router_model: str = "gpt-5.4-mini"
     openai_answer_model: str = "gpt-5.5"
     openai_extraction_model: str = "gpt-5.5"
@@ -102,6 +108,19 @@ class Settings(BaseSettings):
         if self.anthropic_api_key is None:
             raise MissingApiKey("ANTHROPIC_API_KEY is not set")
         return self.anthropic_api_key.get_secret_value()
+
+    def require_gemini_key(self) -> str:
+        if self.gemini_api_key is None:
+            raise MissingApiKey("GEMINI_API_KEY is not set")
+        return self.gemini_api_key.get_secret_value()
+
+    def require_llm_keys(self) -> None:
+        """Fails fast when the configured provider's keys are missing."""
+        if self.llm_provider == "gemini":
+            self.require_gemini_key()
+            return
+        self.require_anthropic_key()
+        self.require_openai_key()
 
     def require_openai_key(self) -> str:
         if self.openai_api_key is None:

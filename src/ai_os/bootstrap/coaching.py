@@ -9,7 +9,7 @@ from ai_os.modules.coaching.application.buyer import CrewBuyer
 from ai_os.modules.coaching.application.service import Coaching
 from ai_os.modules.coaching.ports.coaching import SpeechSynthesizer
 from ai_os.shared.config import MissingApiKey, Settings
-from ai_os.shared.llm.crewai_adapter import fallback_llm, primary_llm
+from ai_os.shared.llm.crewai_adapter import crew_llms
 from ai_os.shared.llm.port import LLMRole
 from ai_os.shared.llm.pydantic_ai_adapter import PydanticAIStructuredLLM, build_model
 
@@ -29,10 +29,7 @@ def build_coaching(settings: Settings) -> Coaching:
         raise ValueError("Set ASYNC_DATABASE_URL")
 
     def buyer_llms() -> list:
-        return [
-            primary_llm(settings, LLMRole.EXTRACTION),
-            fallback_llm(settings, LLMRole.EXTRACTION),
-        ]
+        return crew_llms(settings, LLMRole.EXTRACTION)
 
     return Coaching(
         PostgresSessionStore(create_async_engine(settings.async_database_url)),

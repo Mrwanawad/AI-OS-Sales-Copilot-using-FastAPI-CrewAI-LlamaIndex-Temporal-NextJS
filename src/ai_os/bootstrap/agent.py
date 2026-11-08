@@ -30,7 +30,7 @@ from ai_os.modules.inventory.ports.store import UnitStore
 from ai_os.modules.knowledge.application.retrieve import RetrieveKnowledge
 from ai_os.modules.knowledge.domain.models import SearchFilters
 from ai_os.shared.config import Settings
-from ai_os.shared.llm.crewai_adapter import fallback_llm, primary_llm
+from ai_os.shared.llm.crewai_adapter import crew_llms
 from ai_os.shared.llm.port import LLMRole
 from ai_os.shared.llm.pydantic_ai_adapter import (
     PydanticAIStructuredLLM,
@@ -209,11 +209,8 @@ def build_ask_agent(
     crm: CrmStore,
     escalations: Escalations,
 ) -> AskAgent:
-    settings.require_anthropic_key()
-    settings.require_openai_key()
-    composer = CrewAnswerComposer(
-        [primary_llm(settings, LLMRole.ANSWER), fallback_llm(settings, LLMRole.ANSWER)]
-    )
+    settings.require_llm_keys()
+    composer = CrewAnswerComposer(crew_llms(settings, LLMRole.ANSWER))
     return AskAgent(
         PydanticAIStructuredLLM(partial(build_model, settings)),
         composer,
