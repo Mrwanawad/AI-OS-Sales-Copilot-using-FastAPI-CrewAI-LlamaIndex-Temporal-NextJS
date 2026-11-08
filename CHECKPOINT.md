@@ -10,7 +10,8 @@ Last updated: 2026-11-08, during step 9. Full design: `architecture.md`.
 - Postgres tests run on an embedded Postgres 16 with pgvector (`pgserver`, dev dependency), or on `TEST_DATABASE_URL` when set. Docker is not needed.
 - `ruff check` and all 6 `lint-imports` contracts pass.
 - Local git repository on `main`, 2 commits, authored by Mrwan only. Not pushed; CI has never run. GitHub `AIOS-CRM-Copilot` holds an older, different version.
-- No API keys are available yet, so no successful LLM call has run.
+- No paid API keys. `LLM_PROVIDER=gemini` runs the answer gate on Gemini's free tier: 40 synthetic cases, 75% before and 85% after two fixes it surfaced (README, `evals/results/`). Offline evals: SQL guard 74/74, grounding 28/30, retrieval saturated at 1.0 on 15 queries.
+- Public repo: https://github.com/Mrwanawad/AI-OS-Sales-Copilot-using-FastAPI-CrewAI-LlamaIndex-Temporal-NextJS
 
 ## Decisions
 - **Application architecture:** modular monolith with Hexagonal (Ports & Adapters) modules, enforced by `import-linter`.

@@ -44,6 +44,22 @@ def relevancy(question: str, answer: str, model: str) -> float:
     return metric.score
 
 
+TRANSIENT = ("503", "429", "high demand", "RESOURCE_EXHAUSTED", "ConnectError", "ReadError")
+
+
+async def ask_with_retry(agent, case: AnswerCase, attempts: int = 4):
+    """Free-tier overloads and network blips are retried; anything else fails the case."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return await agent(case.question, case.project, asked_by="answer-eval")
+        except Exception as error:
+            text = f"{type(error).__name__}: {error}"
+            if attempt == attempts or not any(mark in text for mark in TRANSIENT):
+                raise
+            print(f"  retry {attempt} after {text[:80]}", flush=True)
+            await asyncio.sleep(20 * attempt)
+
+
 def model_name(settings: Settings) -> str:
     if settings.llm_provider == "gemini":
         return settings.gemini_model
@@ -70,7 +86,7 @@ async def run(judge: bool, delay: float) -> dict:
             await asyncio.sleep(delay)
         started = time.perf_counter()
         try:
-            answer = await agent(case.question, case.project, asked_by="answer-eval")
+            answer = await ask_with_retry(agent, case)
             problems = grade(case, answer)
             row = {
                 "status": answer.status.value,

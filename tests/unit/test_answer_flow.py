@@ -223,6 +223,18 @@ async def test_low_confidence_escalates() -> None:
     assert "low confidence" in tools.tickets[0][1]
 
 
+async def test_evidence_that_does_not_answer_escalates_even_when_confident() -> None:
+    # Found in the Gemini eval: "the documents don't mention it" came back as an answer.
+    tools = FakeTools(knowledge=[DOCUMENT])
+    reply = composed("The documents don't mention pets.", confidence=0.95)
+    composer = ScriptedComposer(reply.model_copy(update={"answered_from_evidence": False}))
+
+    answer = await agent(ScriptedLLM(Intent.KNOWLEDGE), composer, tools)("Are pets allowed?")
+
+    assert answer.status is AnswerStatus.ESCALATED
+    assert "does not answer" in tools.tickets[0][1]
+
+
 async def test_tool_that_cannot_answer_escalates() -> None:
     tools = FakeTools(inventory=ToolCouldNotAnswer("only SELECT is allowed"))
 

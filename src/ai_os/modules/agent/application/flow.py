@@ -240,6 +240,9 @@ class AnswerFlow(Flow[AnswerState]):
         await self._escalate(f"answer failed grounding checks: {feedback}")
 
     async def _accept(self, composed: ComposedAnswer, evidence: Sequence[Evidence]) -> None:
+        if not composed.answered_from_evidence:
+            await self._escalate("the evidence does not answer the question")
+            return
         if composed.confidence < self._min_confidence:
             await self._escalate(f"low confidence ({composed.confidence})")
             return

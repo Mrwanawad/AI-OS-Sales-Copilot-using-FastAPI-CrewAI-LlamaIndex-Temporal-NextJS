@@ -65,6 +65,45 @@ Create the first manager with `python scripts/create_user.py <username> "<Name>"
 Managers then add, disable and reset users through `/auth/users`. Disabling a user or changing a
 password ends that user's existing sessions.
 
+## Evaluation results
+
+All cases are synthetic and run on the invented demo data, so the numbers show how the
+pipeline behaves, not how it performs for a real brokerage. Full reports are in `evals/results/`.
+
+**Offline (no LLM)**, `python scripts/run_offline_evals.py --real-models`:
+
+| Check | Cases | Result |
+|---|---|---|
+| Retrieval recall@5 / MRR / nDCG@10 | 15 queries | 1.0 / 1.0 / 1.0 (the set is too small to separate setups) |
+| SQL guard blocks unsafe queries | 50 attacks, 24 valid | precision 1.0, recall 1.0 |
+| Grounding check rejects unsupported numbers | 30 answers | precision 0.93, recall 0.93 |
+
+The grounding check's two misses are real limits of number matching: "8%" passed because
+"8 years" was in the evidence, and "5.2M" was rejected because the evidence says "5,200,000".
+
+**Answer gate on a real model**, `LLM_PROVIDER=gemini python scripts/run_answer_eval.py`,
+40 cases on `gemini-3.1-flash-lite` (free tier) with small local embedding models:
+
+| Metric | First run | After fixes |
+|---|---|---|
+| Pass rate | 75% | 85% |
+| Routing accuracy | 89% | 89% |
+| Escalation recall | 29% | 57% |
+| Answered when it should have escalated | 6 | 3 |
+| Inventory questions | 90% | 100% |
+
+The first run found two bugs, both fixed:
+- When the documents didn't cover a question, the agent replied "the documents don't mention
+  it" as an answer, so no ticket reached a team lead. The composer now reports whether the
+  evidence answers the question, and the agent escalates when it doesn't.
+- The text-to-SQL prompt always filtered on available units, so "Is DB-210 still available?"
+  couldn't see that it was sold. Questions naming unit codes now return their status.
+
+Still open: Gemini sometimes marks a "not mentioned" reply as answered (3 cases), and
+questions that need judgment, like a competitor's discount, are answered from policy instead of
+escalated. Production uses Anthropic with OpenAI as fallback, and this gate hasn't run on
+those models yet.
+
 ## Deploy
 
 - API, Temporal worker, retrain and cleanup jobs: `render.yaml` (Render Blueprint).
