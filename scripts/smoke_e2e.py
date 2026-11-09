@@ -99,7 +99,7 @@ NO_TOKEN = {"Authorization": ""}
 PASSWORD = "smoke-password-long-enough"
 USERS = (("rep-a", "rep"), ("rep-b", "rep"), ("lead-a", "team_lead"), ("manager-b", "manager"))
 WHEN = datetime(2026, 11, 1, 10, 0, tzinfo=UTC)
-PORT = 8765
+PORT = int(os.environ.get("SMOKE_PORT", "8765"))
 API = f"http://127.0.0.1:{PORT}"
 TASK_QUEUE = f"smoke-{uuid4().hex}"
 failures: list[str] = []

@@ -1,11 +1,11 @@
 # Checkpoint — AI OS
 
-Last updated: 2026-11-09, during step 9. Full design: `architecture.md`.
+Last updated: 2026-11-09 (evening), during step 9. Full design: `architecture.md`.
 
 ## Current State
 - Build steps 1 (scaffold), 2 (Knowledge), 3 (Inventory), 4 (Agent), 5 (CRM Copilot), 6 (Coaching), 7 (Best-time model) and 8 (Escalation and memory loop) of 9 are done. Step 9 is partly done: everything buildable without API keys or your accounts is built, and nothing is deployed.
-- 491 default tests pass (2026-11-08). 3 more use `-m models`; the embedding and Docling ones last ran in step 2, the Whisper one in step 5.
-- `scripts/smoke_e2e.py` passes all 97 checks (84 before, plus login, logout, upload, worker ingestion from Postgres and re-upload versioning) on PGVector: real API and Temporal worker processes, real Postgres, real small models, over HTTP, with scripted LLMs. Qdrant server mode has not been run.
+- 510 default tests pass (2026-11-09). 3 more use `-m models`; the embedding and Docling ones last ran in step 2, the Whisper one in step 5.
+- `scripts/smoke_e2e.py` passes all 97 checks (84 before, plus login, logout, upload, worker ingestion from Postgres and re-upload versioning) on PGVector: real API and Temporal worker processes, real Postgres, real small models, over HTTP, with scripted LLMs. Qdrant server mode (1.20.0 Windows binary, 2026-11-09) passes all 96 checks it runs, including re-upload versioning and revoke deletes.
 - Postgres tests run on an embedded Postgres 16 with pgvector (`pgserver`, dev dependency), or on `TEST_DATABASE_URL` when set. Docker is not needed.
 - `ruff check`, `ruff format --check` and all 6 `lint-imports` contracts pass.
 - Public repo: https://github.com/Mrwanawad/AI-OS-Sales-Copilot-using-FastAPI-CrewAI-LlamaIndex-Temporal-NextJS. 9 commits on `main`, all authored by Mrwan with no Claude lines. CI (backend and frontend jobs) is green on `3c20c7c`. The older GitHub repo `AIOS-CRM-Copilot` holds a different version and was left alone.
@@ -111,6 +111,17 @@ Last updated: 2026-11-09, during step 9. Full design: `architecture.md`.
 - **Non-answers escalate:** the composer reports `answered_from_evidence`, and `domain/non_answers.py` is a regex backstop for replies like "the documents don't mention it" (English and Arabic). Either one escalates instead of answering.
 - **Inventory SQL prompt:** questions naming unit codes return those units with any status, so "Is DB-210 available?" can say sold.
 
+### 2026-11-09 session: everything buildable without keys or accounts
+- **PDPL:** `crm_copilot/application/privacy.py`. Managers erase a lead with `DELETE /crm/leads/{id}` (lead, interactions, card, handovers, follow-ups, stored recordings, escalation tickets). `scripts/apply_retention.py` (Render cron 00:45 UTC) clears old interaction text and recordings, dormant cards and handovers, and old closed tickets. Periods are `*_RETENTION_DAYS` settings, placeholders for legal.
+- **Judgment questions:** `agent/domain/judgment.py` escalates competitor offers, discounts or exceptions to approve, off-contract promises and price forecasts before the router runs. 50 cases in `evals/judgment_cases.jsonl` (tuned on them, so 1.0 is coverage, not generalization), gated in CI.
+- **Approved answers expire:** `expires_at` set at approval (`APPROVED_ANSWER_VALID_DAYS`, 90). `/escalations/knowledge/{id}/renew`; `scripts/expire_approved_answers.py` (cron 00:15 UTC). The web app lists live shared answers with Renew and Revoke.
+- **Role-play saves** carry a `version`; a stale save raises `SessionChanged` (409).
+- **CrewAI tracing:** `shared/llm/crew_tracing.py` wraps composer and buyer runs in GenAI spans with token usage; Langfuse exports any `gen_ai.*` span. Not yet seen in a real Langfuse project.
+- **MCP:** `scripts/mcp_server.py` serves inventory, calculator and CRM tools over stdio; tested as a real subprocess against Postgres. Not served over HTTP (no per-rep checks there).
+- **Ragas dropped**; LangChain and LangGraph are gone from `uv.lock`.
+- Qdrant pinned to 1.20.0 in `render.yaml` and `docker-compose.yml`, matching `qdrant-client` 1.20.
+- `scripts/smoke_e2e.py` takes `SMOKE_PORT` (8765 is used by another project's dashboard here).
+
 ### Evaluation (2026-11-08)
 All cases are synthetic, on the invented demo data. Reports in `evals/results/`; summary in the README.
 - **Offline, no LLM** (`scripts/run_offline_evals.py`; CI runs it with `--gate` against `evals/offline_thresholds.json`): SQL guard 74/74 (`evals/sql_guard_cases.jsonl`), grounding 30/30 (`grounding_cases.jsonl`, 28/30 before the scale and percentage fix), non-answer detector 63/63 (`non_answer_cases.jsonl`, 49 replies recorded from real Gemini runs).
@@ -121,7 +132,7 @@ All cases are synthetic, on the invented demo data. Reports in `evals/results/`;
 ## Due
 
 ### Build Steps
-- [ ] 9. Remaining: run the answer gate on Anthropic and OpenAI, replace synthetic gold sets with team-lead-graded ones, decide on Ragas, run the Docker stack (not on this machine), deploy to Render and Vercel.
+- [ ] 9. Remaining: run the answer gate on Anthropic and OpenAI, replace synthetic gold sets with team-lead-graded ones, run the Docker stack (not on this machine), deploy to Render and Vercel. Ragas dropped 2026-11-09.
 - [x] Push to GitHub and green CI. Done 2026-11-08.
 - [x] Next.js frontend. Done 2026-11-08; tested in Chrome against the local API without an LLM key (questions return a clean 503 message).
 - [x] Document upload route. Done 2026-11-08.
@@ -130,7 +141,7 @@ All cases are synthetic, on the invented demo data. Reports in `evals/results/`;
 ### Must Fix Before Deploying
 - [x] Login, logout, session revocation and secret rotation. SSO is still not built.
 - [ ] Discount limits (2%, 5%, 10%) and the calling window (09:00-21:00, all week) are placeholders. Both are settings (`DISCOUNT_LIMIT_*_PCT`, `CALL_WINDOW_*` in `.env.example`); set the brokerage's real policy there.
-- [ ] Escalation recall on a real model was 57% before the backstop. Judgment questions (a competitor's discount) still get answered from policy instead of escalated; the backstop only catches "not mentioned" replies.
+- [ ] Escalation recall on a real model was 57% before the backstops. The non-answer and judgment detectors now cover the recorded misses (replay: 100%), but no fresh model run has measured them.
 - [x] Model reaches API and worker through Postgres; weekly retrain on Render cron.
 - [x] Ticket push through a signed webhook. Still needs a receiver (n8n, Zapier or a WhatsApp gateway) chosen and set up.
 - [x] Files go through Postgres. Uploads are capped at 50 MB; move to object storage (S3 or R2) behind the same port if recordings get large.
@@ -146,24 +157,24 @@ All cases are synthetic, on the invented demo data. Reports in `evals/results/`;
 - [ ] pyannote diarization. The adapter matches the installed 4.0.7 API but never ran: it needs a Hugging Face token and accepted model terms. Without one, transcripts have no speaker labels.
 - [ ] Whisper `large-v3` and Egyptian Arabic audio.
 - [ ] Card, handover and post-call quality on a real model.
-- [ ] PDPL retention and deletion for transcripts and cards are not built.
+- [x] PDPL erasure and retention built 2026-11-09. Periods are placeholders, and the source CRM and dialer copies must be erased there.
 - [ ] Real role-play: buyer realism, staying in character, scoring quality, and resistance to a rep writing "give me 5 out of 5" in the chat.
 - [ ] ElevenLabs. The adapter matches the installed SDK but never ran, and Egyptian Arabic voice quality is unknown.
 - [ ] Best-time model on real call logs. The architecture's real metric, answer-rate uplift against random times, needs a live experiment.
 - [ ] Docker: the daemon isn't running here, so only `docker compose config` was checked. Image tags and the Render blueprint are untested.
-- [ ] Composer and buyer calls in Langfuse. Only PydanticAI calls are traced, so cost per answer is incomplete until CrewAI is instrumented.
+- [ ] Composer and buyer spans in a real Langfuse project. Instrumented 2026-11-09 and tested with an in-memory exporter only.
 - [ ] Text-to-SQL quality on Anthropic and OpenAI. On Gemini all 10 inventory cases passed after the prompt fix, including one Arabic question and one prompt-injection attempt.
 - [ ] PGVector with Arabic text. It passes the store contract on English test data; Arabic normalization does not apply there.
-- [ ] Qdrant server mode, especially deletes. Only in-process mode was tested, because `github.com` did not resolve here to fetch the binary. Start a server, set `QDRANT_URL`, then run `python scripts/smoke_e2e.py --vector-store qdrant`.
+- [x] Qdrant server mode, deletes included: smoke passed on 1.20.0 (2026-11-09). On Windows keep its storage path short; deep paths hit the 260-character limit (`Gridstore IO error`).
 - [ ] `bge-m3` and `bge-reranker-v2-m3` on a real document set. They scored 1.0 on the 40 demo queries (Arabic and cross-lingual included), which only proves the wiring.
 - [ ] Scanned Arabic PDFs through Docling.
 - [ ] Sparse encoder on real data, using the exact-match metric in the eval gate.
-- [ ] The MCP server over a real transport. It was tested in-process only.
+- [x] MCP over stdio as a real subprocess (2026-11-09).
 
 ### Open Questions for Mrwan
 - [ ] Confirm which profile tools are already used elsewhere. Only part of the profile README could be read, and Langfuse did not appear in that part.
 - [ ] Add PydanticAI to the GitHub profile stack badges once it is built.
-- [ ] Decide whether to drop Ragas. It pulls LangChain and LangGraph into the `eval` extra; app code does not import them.
+- [x] Ragas dropped (2026-11-09).
 - [ ] Choose the escalation webhook receiver (n8n, Zapier or a WhatsApp gateway).
 - [ ] Get the brokerage's discount and calling-hours policy.
 
@@ -204,7 +215,7 @@ Network from this machine has intermittent DNS failures. If `uv` fails with `dns
 
 - Coaching scores cannot check product accuracy, because the rubric has no reference facts. Reps can state a wrong price and not lose points.
 - The retrieval gate in CI uses a hashing embedder on 40 synthetic queries (recall@5 0.91). It catches broken wiring, not poor retrieval quality. The Arabic threshold is 0.85 because the hashing embedder misses one dialect query.
-- Two simultaneous messages in one session can overwrite each other, because saves are last-write-wins.
+- Two simultaneous messages in one session: one lands, the other gets a 409 and must be resent.
 - All personas share one ElevenLabs voice, and audio is not cached, so each request spends credits.
 
 - Top-decile lift is observational: reps chose when to call, so it isn't the effect of following the advice.
@@ -213,7 +224,9 @@ Network from this machine has intermittent DNS failures. If `uv` fails with `dns
 
 - The personal data screen catches phones, emails and national IDs only. Client names depend on the human reviewer.
 - A crash between claiming an approval and publishing leaves an answer marked approved but not searchable. A publish that fails normally returns it to pending.
-- Approved answers don't expire, so one quoting a price can go stale until someone revokes it.
+- Approved answers stay searchable until their review period ends (90 days by default), so a price can be stale for that long unless someone revokes it.
+- The judgment detector is a regex tuned on 50 cases; new phrasings will slip past it.
+- Erasure covers what the AI OS holds. Langfuse traces hold no content by default, but Temporal histories keep ids.
 
 ## Gotchas
 - Check free disk space, other busy Claude sessions in this folder (`ai-os-crm-copilot-c0` was active on 2026-11-08) and `git status` before heavy jobs.
