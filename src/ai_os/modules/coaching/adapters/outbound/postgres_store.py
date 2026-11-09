@@ -1,8 +1,9 @@
 from pydantic import TypeAdapter
-from sqlalchemy import Column, MetaData, String, Table, select
+from sqlalchemy import Column, Integer, MetaData, String, Table, func, select
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from ai_os.modules.coaching.domain.errors import SessionChanged
 from ai_os.modules.coaching.domain.models import RolePlaySession
 
 metadata = MetaData()
@@ -29,10 +30,18 @@ class PostgresSessionStore:
     async def save(self, session: RolePlaySession) -> None:
         payload = _SESSION.dump_python(session, mode="json")
         statement = insert(sessions).values(id=session.id, rep_id=session.rep_id, payload=payload)
+        stored_version = func.coalesce(sessions.c.payload["version"].astext.cast(Integer), 0)
+        # Only the version this one was built from may be replaced, so concurrent saves
+        # cannot silently drop each other's turns.
+        statement = statement.on_conflict_do_update(
+            index_elements=["id"],
+            set_={"payload": payload},
+            where=stored_version == session.version - 1,
+        )
         async with self._engine.begin() as connection:
-            await connection.execute(
-                statement.on_conflict_do_update(index_elements=["id"], set_={"payload": payload})
-            )
+            result = await connection.execute(statement)
+        if result.rowcount != 1:
+            raise SessionChanged(session.id)
 
     async def get(self, session_id: str) -> RolePlaySession | None:
         query = select(sessions.c.payload).where(sessions.c.id == session_id)

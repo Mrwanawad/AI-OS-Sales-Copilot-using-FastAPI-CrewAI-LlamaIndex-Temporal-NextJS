@@ -71,4 +71,5 @@ def build_escalations(settings: Settings) -> Escalations:
         KnowledgePublisherAdapter(_approved_answers),
         build_notifier(settings),
         lambda: datetime.now(UTC),
+        settings.approved_answer_valid_days,
     )

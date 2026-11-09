@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from ai_os.modules.coaching.domain.errors import (
     NothingToScore,
     PersonaNotFound,
+    SessionChanged,
     SessionClosed,
     SessionNotFound,
 )
@@ -19,6 +20,7 @@ _STATUS_FOR = {
     PersonaNotFound: 404,
     SessionNotFound: 404,
     SessionClosed: 409,
+    SessionChanged: 409,
     NothingToScore: 409,
 }
 _HANDLED = tuple(_STATUS_FOR)

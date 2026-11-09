@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     # Ticket events are POSTed here, signed like the CRM webhook. Without it, tickets only queue.
     escalation_webhook_url: str | None = None
     escalation_webhook_secret: SecretStr | None = None
+    # Approved answers leave search after this many days unless a team lead renews them.
+    approved_answer_valid_days: int = 90
     # Where the web app runs, for links in notifications and CORS.
     app_url: str | None = None
     # Extra comma-separated browser origins allowed to call the API, e.g. Vercel previews.
@@ -86,6 +88,14 @@ class Settings(BaseSettings):
 
     elevenlabs_api_key: SecretStr | None = None
     elevenlabs_voice_id: str | None = None
+
+    # Egypt PDPL retention. Placeholders: the brokerage's legal team sets the real periods.
+    # Interaction text and call recordings; times and call outcomes stay for best-time training.
+    interaction_content_retention_days: int = 730
+    # Context cards and handovers of leads with no interaction for this long.
+    dormant_card_retention_days: int = 365
+    # Answered and dismissed escalation tickets, which can quote a client's card.
+    closed_ticket_retention_days: int = 365
 
     business_timezone: str = "Africa/Cairo"
     # Written by scripts/train_best_time.py. Cards omit the estimate until it exists.

@@ -124,6 +124,14 @@ class PostgresFileStore:
             await connection.execute(statement)
         return StoredFile(f"{STORED_PREFIX}{name}", values["filename"], len(data), digest)
 
+    async def delete(self, reference: str) -> None:
+        """Deletes a stored file. Plain paths belong to someone else and are left alone."""
+        if not reference.startswith(STORED_PREFIX):
+            return
+        file_id = reference.removeprefix(STORED_PREFIX)
+        async with self._engine.begin() as connection:
+            await connection.execute(stored_files.delete().where(stored_files.c.id == file_id))
+
     async def fingerprint(self, reference: str) -> str | None:
         """The stored file's SHA-256, so readers can tell it changed without downloading it."""
         query = select(stored_files.c.sha256).where(

@@ -14,6 +14,8 @@ class CandidateStatus(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     REVOKED = "revoked"
+    # Taken out of search when its review period ran out; approve a fresh answer to restore it.
+    EXPIRED = "expired"
 
 
 @dataclass(frozen=True)
@@ -46,3 +48,5 @@ class KnowledgeCandidate:
     reviewed_by: str | None = None
     reviewed_at: datetime | None = None
     note: str = ""
+    # Approved answers can quote prices that change, so each one leaves search at this time.
+    expires_at: datetime | None = None

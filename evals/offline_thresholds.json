@@ -4,5 +4,7 @@
   "grounding.recall": 0.95,
   "grounding.precision": 0.95,
   "non_answers.recall": 0.9,
-  "non_answers.precision": 0.9
+  "non_answers.precision": 0.9,
+  "judgment.recall": 0.9,
+  "judgment.precision": 0.9
 }

@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ai_os.modules.crm_copilot.adapters.inbound.api import create_router, sign
+from ai_os.modules.crm_copilot.application.privacy import ErasureReport
+from ai_os.modules.crm_copilot.domain.errors import LeadNotFound
 from ai_os.modules.crm_copilot.domain.models import ContextCard
 from ai_os.shared.auth import Role
 
@@ -217,3 +219,52 @@ def test_recording_upload_needs_consent_access_a_call_and_audio() -> None:
     assert other_rep.status_code == 404 and unknown.status_code == 404
     assert not_audio.status_code == 422
     assert recordings.saved == [] and publisher.events == []
+
+
+class FakePrivacy:
+    def __init__(self) -> None:
+        self.erased: list[tuple[str, str]] = []
+
+    async def erase_lead(self, lead_id: str, requested_by: str) -> ErasureReport:
+        if lead_id != "L1":
+            raise LeadNotFound(lead_id)
+        self.erased.append((lead_id, requested_by))
+        return ErasureReport(lead_id, 1, 2)
+
+
+def test_only_a_manager_can_erase_a_lead() -> None:
+    privacy = FakePrivacy()
+    app = FastAPI()
+    app.include_router(
+        create_router(
+            FakeCrmStore,
+            FakePublisher,
+            lambda: SECRET,
+            AUTH,
+            allow_all,
+            get_privacy=lambda: privacy,
+        )
+    )
+    test_client = TestClient(app)
+
+    for role in (Role.REP, Role.TEAM_LEAD):
+        response = test_client.delete("/crm/leads/L1", headers=bearer("x", role))
+        assert response.status_code == 403
+    assert privacy.erased == []
+
+    manager = bearer("manager-a", Role.MANAGER)
+    response = test_client.delete("/crm/leads/L1", headers=manager)
+    assert response.status_code == 200
+    assert response.json() == {
+        "lead_id": "L1",
+        "recordings_deleted": 1,
+        "linked_records_deleted": 2,
+    }
+    assert privacy.erased == [("L1", "manager-a")]
+    assert test_client.delete("/crm/leads/L9", headers=manager).status_code == 404
+
+
+def test_erase_is_503_when_not_configured() -> None:
+    response = client().delete("/crm/leads/L1", headers=bearer("manager-a", Role.MANAGER))
+
+    assert response.status_code == 503

@@ -17,6 +17,10 @@ from ai_os.modules.crm_copilot.adapters.outbound.speech import (
 from ai_os.modules.crm_copilot.application.build_card import BuildContextCard
 from ai_os.modules.crm_copilot.application.handover import BuildHandover
 from ai_os.modules.crm_copilot.application.post_call import ProcessPostCall
+from ai_os.modules.crm_copilot.application.privacy import (
+    PersonalDataLifecycle,
+    RetentionPeriods,
+)
 from ai_os.modules.crm_copilot.application.process_call import ProcessCallRecording
 from ai_os.modules.crm_copilot.domain.models import MatchedUnit, Preferences
 from ai_os.modules.crm_copilot.ports.crm import CrmStore, RecordingFiles
@@ -97,6 +101,21 @@ def build_crm_activities(
         ProcessPostCall(llm, store, utc_now),
         BuildHandover(llm, store, utc_now),
     )
+
+
+def build_privacy(settings: Settings) -> PersonalDataLifecycle:
+    from ai_os.bootstrap.escalation import build_escalations
+    from ai_os.bootstrap.uploads import StoredUploads
+    from ai_os.shared.files import PostgresFileStore
+
+    store = build_crm_store(settings)
+    periods = RetentionPeriods(
+        settings.interaction_content_retention_days,
+        settings.dormant_card_retention_days,
+        settings.closed_ticket_retention_days,
+    )
+    files = StoredUploads(PostgresFileStore(create_async_engine(settings.async_database_url)))
+    return PersonalDataLifecycle(store, files, [build_escalations(settings)], periods, utc_now)
 
 
 def build_event_publisher(settings: Settings) -> TemporalEventPublisher:

@@ -30,6 +30,9 @@ class StoredUploads:
     async def put(self, filename: str, content_type: str, data: bytes, uploaded_by: str) -> str:
         return (await self._files.put(filename, content_type, data, uploaded_by)).reference
 
+    async def delete(self, reference: str) -> None:
+        await self._files.delete(reference)
+
 
 class TemporalIngestion:
     def __init__(self, connect: Callable[[], Awaitable[Client]], task_queue: str) -> None:

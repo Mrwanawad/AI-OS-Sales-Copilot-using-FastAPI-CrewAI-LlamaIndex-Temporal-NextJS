@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-08T20:26:13+00:00",
+  "run_at": "2026-11-09T16:43:23+00:00",
   "retrieval_queries": 40,
   "retrieval": {
     "hashing embedder": {
@@ -12,18 +12,6 @@
       "paraphrase_recall_at_5": 1.0,
       "cross_lingual_recall_at_5": 0.6,
       "typo_recall_at_5": 0.5,
-      "multi_recall_at_5": 1.0
-    },
-    "bge-m3 + reranker": {
-      "recall_at_5": 1.0,
-      "mrr": 1.0,
-      "ndcg_at_10": 1.0,
-      "semantic_recall_at_5": 1.0,
-      "exact_code_recall_at_5": 1.0,
-      "arabic_recall_at_5": 1.0,
-      "paraphrase_recall_at_5": 1.0,
-      "cross_lingual_recall_at_5": 1.0,
-      "typo_recall_at_5": 1.0,
       "multi_recall_at_5": 1.0
     }
   },
@@ -53,6 +41,16 @@
     "false_positives": 0,
     "false_negatives": 0,
     "true_negatives": 48,
+    "precision": 1.0,
+    "recall": 1.0,
+    "misses": []
+  },
+  "judgment": {
+    "cases": 50,
+    "true_positives": 23,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_negatives": 27,
     "precision": 1.0,
     "recall": 1.0,
     "misses": []

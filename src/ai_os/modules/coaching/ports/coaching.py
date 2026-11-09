@@ -5,7 +5,12 @@ from ai_os.modules.coaching.domain.models import Persona, RolePlaySession, Turn
 
 
 class SessionStore(Protocol):
-    async def save(self, session: RolePlaySession) -> None: ...
+    async def save(self, session: RolePlaySession) -> None:
+        """Store a new session (version 0) or the successor of the stored version.
+
+        Raises SessionChanged when the stored version is not session.version - 1.
+        """
+        ...
 
     async def get(self, session_id: str) -> RolePlaySession | None: ...
 

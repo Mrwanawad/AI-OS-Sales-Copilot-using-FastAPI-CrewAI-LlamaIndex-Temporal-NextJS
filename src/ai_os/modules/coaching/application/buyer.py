@@ -6,6 +6,7 @@ from crewai.llms.base_llm import BaseLLM
 
 from ai_os.modules.coaching.domain.errors import LLMUnavailable
 from ai_os.modules.coaching.domain.models import Persona, Turn
+from ai_os.shared.llm.crew_tracing import traced_kickoff
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class CrewBuyer:
         }
         for llm in self._llms():
             try:
-                result = await _crew(llm, persona).akickoff(inputs=inputs)
+                result = await traced_kickoff(_crew(llm, persona), inputs, "buyer", llm.model)
             except Exception:
                 logger.exception("Buyer failed on %s", llm.model)
                 continue

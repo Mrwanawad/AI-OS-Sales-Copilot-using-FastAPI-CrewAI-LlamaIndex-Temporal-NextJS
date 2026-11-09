@@ -48,6 +48,11 @@ class NoteRequest(BaseModel):
     note: Note
 
 
+class ValidityRequest(BaseModel):
+    # Days the answer stays in search before it must be renewed. Default: the setting.
+    valid_days: int | None = Field(default=None, ge=1, le=365)
+
+
 def _http(error: Exception) -> HTTPException:
     return HTTPException(status_code=_STATUS_FOR[type(error)], detail=str(error))
 
@@ -82,9 +87,22 @@ def create_router(get_service: Callable[[], Escalations], auth: Authenticator) -
         return await service.list_candidates(status, limit)
 
     @router.post("/knowledge/{candidate_id}/approve")
-    async def approve(candidate_id: str, user: Lead, service: Service) -> KnowledgeCandidate:
+    async def approve(
+        candidate_id: str, user: Lead, service: Service, request: ValidityRequest | None = None
+    ) -> KnowledgeCandidate:
+        valid_days = request.valid_days if request else None
         try:
-            return await service.approve(candidate_id, user.subject)
+            return await service.approve(candidate_id, user.subject, valid_days)
+        except _HANDLED as error:
+            raise _http(error) from error
+
+    @router.post("/knowledge/{candidate_id}/renew")
+    async def renew(
+        candidate_id: str, user: Lead, service: Service, request: ValidityRequest | None = None
+    ) -> KnowledgeCandidate:
+        valid_days = request.valid_days if request else None
+        try:
+            return await service.renew(candidate_id, user.subject, valid_days)
         except _HANDLED as error:
             raise _http(error) from error
 

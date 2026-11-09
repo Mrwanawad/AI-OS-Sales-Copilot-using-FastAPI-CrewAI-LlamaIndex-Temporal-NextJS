@@ -28,7 +28,7 @@ services:
       retries: 20
 
   qdrant:
-    image: qdrant/qdrant:v1.13.6
+    image: qdrant/qdrant:v1.20.0
     volumes: [qdrant:/qdrant/storage]
 
   temporal:

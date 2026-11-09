@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
@@ -19,6 +20,7 @@ from ai_os.modules.coaching.domain.errors import (
     LLMUnavailable,
     NothingToScore,
     PersonaNotFound,
+    SessionChanged,
     SessionClosed,
     SessionNotFound,
 )
@@ -49,6 +51,9 @@ class FakeStore:
         self.sessions: dict[str, RolePlaySession] = {}
 
     async def save(self, session: RolePlaySession) -> None:
+        stored = self.sessions.get(session.id)
+        if (stored.version if stored else -1) != session.version - 1:
+            raise SessionChanged(session.id)
         self.sessions[session.id] = session
 
     async def get(self, session_id: str) -> RolePlaySession | None:
@@ -191,6 +196,29 @@ async def test_send_appends_both_turns_and_gives_buyer_the_message() -> None:
 
     assert [t.text for t in updated.turns[-2:]] == ["Hello", "That sounds expensive."]
     assert buyer.seen[-1] == Turn(Speaker.REP, "Hello")
+
+
+class SlowBuyer(FakeBuyer):
+    async def reply(self, persona: Persona, turns: Sequence[Turn]) -> str:
+        await asyncio.sleep(0)
+        return await super().reply(persona, turns)
+
+
+async def test_two_messages_at_once_cannot_overwrite_each_other() -> None:
+    store = FakeStore()
+    coaching = service(store=store, buyer=SlowBuyer())
+    session = await coaching.start("rep-a", "investor")
+
+    results = await asyncio.gather(
+        coaching.send(session.id, "First"),
+        coaching.send(session.id, "Second"),
+        return_exceptions=True,
+    )
+
+    assert sum(isinstance(result, SessionChanged) for result in results) == 1
+    saved = store.sessions[session.id]
+    assert len(saved.turns) == 3
+    assert saved.version == 1
 
 
 async def test_provider_failure_loses_nothing_so_the_rep_can_resend() -> None:

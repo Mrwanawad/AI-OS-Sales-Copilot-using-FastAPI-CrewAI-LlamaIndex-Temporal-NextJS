@@ -10,6 +10,7 @@ from ai_os.modules.agent.application.composer import ComposedAnswer
 from ai_os.modules.agent.domain import messages
 from ai_os.modules.agent.domain.errors import ToolCouldNotAnswer
 from ai_os.modules.agent.domain.grounding import find_grounding_problems, numbers_in
+from ai_os.modules.agent.domain.judgment import needs_judgment
 from ai_os.modules.agent.domain.models import (
     AgentAnswer,
     AnswerCitation,
@@ -87,6 +88,8 @@ class AnswerState(BaseModel):
     lead_id: str | None = None
     asked_by: str | None = None
     intent: Intent = Intent.KNOWLEDGE
+    # Set when the question asks for a decision only a person can make.
+    judgment: str | None = None
     answer: AgentAnswer | None = None
 
 
@@ -123,6 +126,11 @@ class AnswerFlow(Flow[AnswerState]):
 
     @start()
     async def classify(self) -> None:
+        self.state.judgment = needs_judgment(self.state.question)
+        if self.state.judgment:
+            # Decided before the router, so policy text can't be stretched into a decision.
+            self.state.intent = Intent.ESCALATE
+            return
         decision = await self._llm.extract(
             LLMRole.ROUTER, _ROUTER_INSTRUCTIONS, self.state.question, RoutingDecision
         )
@@ -191,6 +199,9 @@ class AnswerFlow(Flow[AnswerState]):
 
     @listen("escalate")
     async def hand_to_person(self) -> None:
+        if self.state.judgment:
+            await self._escalate(f"needs a person's judgment: {self.state.judgment}")
+            return
         await self._escalate("the rep asked for a person or an approval")
 
     @listen("role_play")

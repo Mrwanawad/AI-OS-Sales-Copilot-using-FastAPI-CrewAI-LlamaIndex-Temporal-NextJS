@@ -89,7 +89,9 @@ class Coaching:
         turns = [*session.turns, Turn(Speaker.REP, message)]
         reply = await self._buyer.reply(PERSONAS[session.persona_id], turns)
         # Saved only after the reply, so a provider failure lets the rep simply resend.
-        updated = replace(session, turns=[*turns, Turn(Speaker.BUYER, reply)])
+        updated = replace(
+            session, turns=[*turns, Turn(Speaker.BUYER, reply)], version=session.version + 1
+        )
         await self._store.save(updated)
         return updated
 
@@ -112,6 +114,7 @@ class Coaching:
             session,
             status=SessionStatus.FINISHED,
             scorecard=build_scorecard(proposed, session.turns),
+            version=session.version + 1,
         )
         await self._store.save(finished)
         return finished

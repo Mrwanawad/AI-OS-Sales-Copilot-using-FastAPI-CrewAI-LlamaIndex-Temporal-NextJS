@@ -18,7 +18,9 @@ All projects, units and clients in `demo_data/` are invented.
 | CRM Copilot (`/crm/*`) | Signed CRM webhooks, Whisper transcription with consent checks, context cards, handover and post-call summaries. |
 | Coaching (`/coaching/*`) | Role-play with invented buyers and rubric scores that must quote the rep. |
 | Best time to call (`/best-time/*`) | LightGBM model trained on call outcomes, published only if it beats a baseline. |
-| Escalations (`/escalations/*`) | Ticket queue, answers back to the rep, two-person approval before an answer becomes knowledge. Optional signed webhook push. |
+| Escalations (`/escalations/*`) | Ticket queue, answers back to the rep, two-person approval before an answer becomes knowledge. Shared answers leave search after a review period (90 days by default) unless a team lead renews them. Optional signed webhook push. |
+| Privacy (`DELETE /crm/leads/{id}`, `scripts/apply_retention.py`) | Egypt PDPL: a manager erases a client and everything linked to them; a daily job clears old interaction text, recordings, dormant cards and closed tickets. |
+| MCP (`scripts/mcp_server.py`) | Inventory, calculator and CRM tools over MCP stdio for clients such as Claude Code. |
 | Accounts (`/auth/*`) | Username and password login, logout, ending a user's sessions, lockout after repeated failures. |
 
 ## Stack
@@ -77,6 +79,7 @@ pipeline behaves, not how it performs for a real brokerage. Full reports are in 
 | SQL guard blocks unsafe queries | 50 attacks, 24 valid | precision 1.0, recall 1.0 |
 | Grounding check rejects unsupported numbers | 30 answers | precision 1.0, recall 1.0 |
 | Non-answer detector ("the documents don't mention it") | 63 replies, 49 from real Gemini runs | precision 1.0, recall 1.0 |
+| Judgment-question detector (competitor offers, exceptions, promises, forecasts) | 22 to escalate, 28 policy questions to leave alone | precision 1.0, recall 1.0 |
 
 Retrieval on 40 queries (paraphrases, typos, unit codes, Arabic, cross-lingual):
 
@@ -88,7 +91,9 @@ Retrieval on 40 queries (paraphrases, typos, unit codes, Arabic, cross-lingual):
 | Typo recall@5 | 0.50 | 1.00 | 1.00 |
 
 There are only 7 demo documents, so the production models saturate; a real document set is
-needed to tell them apart. CI gates the SQL guard, grounding and non-answer scores
+needed to tell them apart. The judgment detector was written against its own 50 cases, so its
+score shows it covers them, not how it does on new phrasings. CI gates the SQL guard, grounding,
+non-answer and judgment scores
 (`evals/offline_thresholds.json`) and the hashing-embedder retrieval scores.
 
 The first grounding run missed 2 of 30: "8%" passed because "8 years" was in the evidence, and
@@ -126,3 +131,5 @@ those models yet.
   Put the Vercel URL in the API's `APP_URL`.
 - Uploaded files and the promoted best-time model are stored in Postgres, so the API and worker
   need no shared disk.
+- Daily cron jobs expire approved answers past their review period and apply PDPL retention.
+  The retention periods (`*_RETENTION_DAYS`) are placeholders for the brokerage's legal team.

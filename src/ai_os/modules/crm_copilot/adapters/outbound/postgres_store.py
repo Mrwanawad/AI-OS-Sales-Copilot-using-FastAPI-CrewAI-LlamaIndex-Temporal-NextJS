@@ -13,6 +13,8 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    delete,
+    or_,
     select,
     update,
 )
@@ -226,6 +228,56 @@ class PostgresCrmStore:
                 )
                 .on_conflict_do_nothing(index_elements=["id"])
             )
+
+    async def erase_lead(self, lead_id: str) -> list[str] | None:
+        async with self._engine.begin() as connection:
+            found = await connection.execute(
+                select(leads.c.id).where(leads.c.id == lead_id).with_for_update()
+            )
+            if found.scalar_one_or_none() is None:
+                return None
+            references = (
+                (
+                    await connection.execute(
+                        select(interactions.c.recording_path).where(
+                            interactions.c.lead_id == lead_id,
+                            interactions.c.recording_path.is_not(None),
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for table in (follow_ups, handovers, context_cards, interactions):
+                await connection.execute(delete(table).where(table.c.lead_id == lead_id))
+            await connection.execute(delete(leads).where(leads.c.id == lead_id))
+        return list(references)
+
+    async def purge_interaction_content(self, before: datetime) -> tuple[int, list[str]]:
+        old = interactions.alias("old")
+        # The self-join returns the values from before the update clears them.
+        statement = (
+            update(interactions)
+            .where(
+                interactions.c.id == old.c.id,
+                interactions.c.occurred_at < before,
+                or_(interactions.c.text != "", interactions.c.recording_path.is_not(None)),
+            )
+            .values(text="", recording_path=None)
+            .returning(old.c.recording_path)
+        )
+        async with self._engine.begin() as connection:
+            rows = (await connection.execute(statement)).scalars().all()
+        return len(rows), [reference for reference in rows if reference]
+
+    async def purge_dormant_cards(self, before: datetime) -> int:
+        recent = select(interactions.c.lead_id).where(interactions.c.occurred_at >= before)
+        async with self._engine.begin() as connection:
+            await connection.execute(delete(handovers).where(handovers.c.lead_id.not_in(recent)))
+            result = await connection.execute(
+                delete(context_cards).where(context_cards.c.lead_id.not_in(recent))
+            )
+        return result.rowcount
 
 
 def _to_interaction(row: Mapping) -> Interaction:

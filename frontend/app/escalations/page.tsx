@@ -10,13 +10,17 @@ function Escalations() {
   const lead = leadsATeam(session);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [live, setLive] = useState<Candidate[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setError(null);
     try {
       setTickets(await api<Ticket[]>(lead ? "/escalations" : "/escalations/mine", {}, session.token));
-      if (lead) setCandidates(await api<Candidate[]>("/escalations/knowledge", {}, session.token));
+      if (lead) {
+        setCandidates(await api<Candidate[]>("/escalations/knowledge", {}, session.token));
+        setLive(await api<Candidate[]>("/escalations/knowledge?status=approved", {}, session.token));
+      }
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Could not load");
     }
@@ -90,6 +94,36 @@ function Escalations() {
                   }}
                 >
                   Reject
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <h2>Shared answers reps can find</h2>
+          <p className="muted small">
+            Each leaves search when its review period ends. Renew it if it is still right, or revoke it now.
+          </p>
+          {live.length === 0 && <p className="muted">No shared answers yet.</p>}
+          {live.map((candidate) => (
+            <div key={candidate.id} className="card">
+              <p dir="auto">
+                <strong>{candidate.question}</strong>
+              </p>
+              <p dir="auto">{candidate.answer}</p>
+              <p className="small muted">
+                {candidate.project}
+                {candidate.expires_at && ` · leaves search ${new Date(candidate.expires_at).toLocaleDateString()}`}
+              </p>
+              <div className="row">
+                <button onClick={() => act(`/escalations/knowledge/${candidate.id}/renew`, {})}>Renew</button>
+                <button
+                  className="ghost"
+                  onClick={() => {
+                    const note = prompt("Why revoke?");
+                    if (note) act(`/escalations/knowledge/${candidate.id}/revoke`, { note });
+                  }}
+                >
+                  Revoke
                 </button>
               </div>
             </div>

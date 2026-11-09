@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from ai_os.modules.escalation.domain.errors import (
@@ -32,11 +32,13 @@ class Escalations:
         publisher: KnowledgePublisher,
         notifier: TicketNotifier,
         now: Callable[[], datetime],
+        answer_valid_days: int = 90,
     ) -> None:
         self._store = store
         self._publisher = publisher
         self._notifier = notifier
         self._now = now
+        self._answer_valid_days = answer_valid_days
 
     async def open_ticket(
         self,
@@ -125,17 +127,30 @@ class Escalations:
         await self._move_ticket(dismissed, TicketStatus.OPEN)
         return dismissed
 
+    async def erase_lead(self, lead_id: str) -> int:
+        """Tickets about a client, deleted when the client asks to be erased."""
+        return await self._store.delete_tickets_for_lead(lead_id)
+
+    async def purge(self, before: datetime) -> int:
+        """Closed tickets can quote a client's card, so they are kept only for a while."""
+        return await self._store.delete_closed_tickets(before)
+
     async def list_candidates(
         self, status: CandidateStatus, limit: int = 100
     ) -> list[KnowledgeCandidate]:
         return await self._store.list_candidates(status, limit)
 
-    async def approve(self, candidate_id: str, reviewed_by: str) -> KnowledgeCandidate:
+    async def approve(
+        self, candidate_id: str, reviewed_by: str, valid_days: int | None = None
+    ) -> KnowledgeCandidate:
         candidate = await self._get_candidate(candidate_id)
         if reviewed_by == candidate.proposed_by:
             raise SameReviewer()
         _refuse_personal_data(f"{candidate.question}\n{candidate.answer}")
-        approved = self._reviewed(candidate, CandidateStatus.APPROVED, reviewed_by)
+        approved = replace(
+            self._reviewed(candidate, CandidateStatus.APPROVED, reviewed_by),
+            expires_at=self._expiry(valid_days),
+        )
         # Claimed before publishing, so a simultaneous rejection can't leave it live and rejected.
         await self._move_candidate(approved, CandidateStatus.PENDING)
         try:
@@ -161,6 +176,42 @@ class Escalations:
             await self._store.update_candidate(candidate, CandidateStatus.REVOKED)
             raise
         return revoked
+
+    async def renew(
+        self, candidate_id: str, reviewed_by: str, valid_days: int | None = None
+    ) -> KnowledgeCandidate:
+        """A team lead confirms an approved answer is still right, restarting its period."""
+        candidate = await self._get_candidate(candidate_id)
+        renewed = replace(
+            candidate,
+            reviewed_by=reviewed_by,
+            reviewed_at=self._now(),
+            expires_at=self._expiry(valid_days),
+        )
+        await self._move_candidate(renewed, CandidateStatus.APPROVED)
+        return renewed
+
+    async def expire_due(self, limit: int = 1000) -> list[KnowledgeCandidate]:
+        """Takes approved answers past their expiry out of search. Run daily."""
+        now = self._now()
+        expired = []
+        for candidate in await self._store.list_candidates(CandidateStatus.APPROVED, limit):
+            if candidate.expires_at is None or candidate.expires_at > now:
+                continue
+            ended = replace(candidate, status=CandidateStatus.EXPIRED, note="Review period ended")
+            # A renewal or revoke that landed first wins, and this one changes nothing.
+            if not await self._store.update_candidate(ended, CandidateStatus.APPROVED):
+                continue
+            try:
+                await self._publisher.remove(ended)
+            except Exception:
+                await self._store.update_candidate(candidate, CandidateStatus.EXPIRED)
+                raise
+            expired.append(ended)
+        return expired
+
+    def _expiry(self, valid_days: int | None) -> datetime:
+        return self._now() + timedelta(days=valid_days or self._answer_valid_days)
 
     def _reviewed(
         self,

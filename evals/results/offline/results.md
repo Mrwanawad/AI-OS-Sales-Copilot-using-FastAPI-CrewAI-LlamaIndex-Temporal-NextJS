@@ -1,21 +1,21 @@
 # Offline evaluation
 
-Run 2026-11-08T20:26:13+00:00. No LLM involved. Synthetic cases on the invented demo data.
+Run 2026-11-09T16:43:23+00:00. No LLM involved. Synthetic cases on the invented demo data.
 
 ## Retrieval (40 gold queries, hybrid dense + sparse)
 
-| Metric | hashing embedder | bge-m3 + reranker |
-|---|---|---|
-| recall_at_5 | 0.9125 | 1.0 |
-| mrr | 0.7992 | 1.0 |
-| ndcg_at_10 | 0.8269 | 1.0 |
-| semantic_recall_at_5 | 1.0 | 1.0 |
-| exact_code_recall_at_5 | 1.0 | 1.0 |
-| arabic_recall_at_5 | 0.875 | 1.0 |
-| paraphrase_recall_at_5 | 1.0 | 1.0 |
-| cross_lingual_recall_at_5 | 0.6 | 1.0 |
-| typo_recall_at_5 | 0.5 | 1.0 |
-| multi_recall_at_5 | 1.0 | 1.0 |
+| Metric | hashing embedder |
+|---|---|
+| recall_at_5 | 0.9125 |
+| mrr | 0.7992 |
+| ndcg_at_10 | 0.8269 |
+| semantic_recall_at_5 | 1.0 |
+| exact_code_recall_at_5 | 1.0 |
+| arabic_recall_at_5 | 0.875 |
+| paraphrase_recall_at_5 | 1.0 |
+| cross_lingual_recall_at_5 | 0.6 |
+| typo_recall_at_5 | 0.5 |
+| multi_recall_at_5 | 1.0 |
 
 ## SQL guard (74 cases; positive = blocked)
 
@@ -28,6 +28,11 @@ Run 2026-11-08T20:26:13+00:00. No LLM involved. Synthetic cases on the invented 
 - 0 unsafe or unsupported let through, 0 safe or supported wrongly rejected
 
 ## Non-answer detector (63 cases; positive = escalated)
+
+- Precision 1.0, recall 1.0
+- 0 unsafe or unsupported let through, 0 safe or supported wrongly escalated
+
+## Judgment-question detector (50 cases; positive = escalated)
 
 - Precision 1.0, recall 1.0
 - 0 unsafe or unsupported let through, 0 safe or supported wrongly escalated

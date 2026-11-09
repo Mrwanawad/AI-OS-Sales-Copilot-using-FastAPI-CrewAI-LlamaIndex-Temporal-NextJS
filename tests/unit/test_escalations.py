@@ -1,5 +1,5 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import FastAPI
@@ -51,6 +51,22 @@ class FakeStore:
             return False
         self.tickets[ticket.id] = ticket
         return True
+
+    async def delete_tickets_for_lead(self, lead_id: str) -> int:
+        doomed = [t.id for t in self.tickets.values() if t.lead_id == lead_id]
+        for ticket_id in doomed:
+            del self.tickets[ticket_id]
+        return len(doomed)
+
+    async def delete_closed_tickets(self, before: datetime) -> int:
+        doomed = [
+            t.id
+            for t in self.tickets.values()
+            if t.status is not TicketStatus.OPEN and t.closed_at and t.closed_at < before
+        ]
+        for ticket_id in doomed:
+            del self.tickets[ticket_id]
+        return len(doomed)
 
     async def add_candidate(self, candidate: KnowledgeCandidate) -> None:
         self.candidates[candidate.id] = candidate
@@ -271,6 +287,65 @@ async def test_failed_removal_stays_approved_so_it_can_be_retried() -> None:
     assert store.candidates[candidate.id].status is CandidateStatus.APPROVED
 
 
+async def test_approved_answer_expires_after_its_period() -> None:
+    clock = [NOW]
+    store, live = FakeStore(), FakePublisher()
+    service = Escalations(store, live, FakeNotifier(), lambda: clock[0], answer_valid_days=30)
+    candidate = await proposed(service)
+    approved = await service.approve(candidate.id, "manager-b")
+    assert approved.expires_at == NOW + timedelta(days=30)
+
+    clock[0] = NOW + timedelta(days=29)
+    assert await service.expire_due() == []
+    assert list(live.live) == [candidate.id]
+
+    clock[0] = NOW + timedelta(days=30)
+    expired = await service.expire_due()
+
+    assert [c.id for c in expired] == [candidate.id]
+    assert store.candidates[candidate.id].status is CandidateStatus.EXPIRED
+    assert live.live == {}
+
+
+async def test_renewal_restarts_the_period() -> None:
+    clock = [NOW]
+    store, live = FakeStore(), FakePublisher()
+    service = Escalations(store, live, FakeNotifier(), lambda: clock[0], answer_valid_days=30)
+    candidate = await proposed(service)
+    await service.approve(candidate.id, "manager-b", valid_days=10)
+
+    clock[0] = NOW + timedelta(days=9)
+    renewed = await service.renew(candidate.id, "lead-c")
+    clock[0] = NOW + timedelta(days=12)
+
+    assert renewed.expires_at == NOW + timedelta(days=39)
+    assert await service.expire_due() == []
+    assert list(live.live) == [candidate.id]
+
+
+async def test_only_approved_answers_can_be_renewed() -> None:
+    service, _store, _live = build()
+    candidate = await proposed(service)
+
+    with pytest.raises(InvalidTransition):
+        await service.renew(candidate.id, "manager-b")
+
+
+async def test_failed_removal_on_expiry_stays_approved_for_the_next_run() -> None:
+    clock = [NOW]
+    store, live = FakeStore(), FakePublisher()
+    service = Escalations(store, live, FakeNotifier(), lambda: clock[0], answer_valid_days=1)
+    candidate = await proposed(service)
+    await service.approve(candidate.id, "manager-b")
+    live.fail = True
+    clock[0] = NOW + timedelta(days=2)
+
+    with pytest.raises(ConnectionError):
+        await service.expire_due()
+
+    assert store.candidates[candidate.id].status is CandidateStatus.APPROVED
+
+
 async def test_dismiss_closes_ticket_with_note() -> None:
     service, _store, _live = build()
     ticket = await service.open_ticket("Q?", "reason")
@@ -372,3 +447,22 @@ def test_errors_map_to_clean_statuses() -> None:
     assert client.get("/escalations/nope", headers=LEAD).status_code == 404
     assert client.post("/escalations/knowledge/nope/approve", headers=LEAD).status_code == 404
     assert client.post("/escalations/nope/answer", json={}, headers=LEAD).status_code == 422
+
+
+def test_approval_period_and_renewal_over_http() -> None:
+    client, service, live = api()
+    candidate = asyncio.run(proposed(service))
+    url = f"/escalations/knowledge/{candidate.id}"
+
+    approved = client.post(f"{url}/approve", json={"valid_days": 14}, headers=MANAGER)
+    assert approved.status_code == 200
+    assert approved.json()["expires_at"].startswith("2026-11-21")
+    assert client.post(f"{url}/renew", json={"valid_days": 400}, headers=LEAD).status_code == 422
+    assert client.post(f"{url}/renew", headers=REP).status_code == 403
+
+    renewed = client.post(f"{url}/renew", headers=LEAD)
+
+    assert renewed.status_code == 200
+    assert renewed.json()["expires_at"].startswith("2027-02-05")
+    assert renewed.json()["reviewed_by"] == "lead-a"
+    assert list(live.live) == [candidate.id]

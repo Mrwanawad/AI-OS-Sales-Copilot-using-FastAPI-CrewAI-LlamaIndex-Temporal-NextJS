@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from ai_os.modules.agent.domain.errors import LLMUnavailable
 from ai_os.modules.agent.domain.models import Evidence
+from ai_os.shared.llm.crew_tracing import traced_kickoff
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class CrewAnswerComposer:
         }
         for llm in self._llms:
             try:
-                result = await _crew(llm).akickoff(inputs=inputs)
+                result = await traced_kickoff(_crew(llm), inputs, "composer", llm.model)
             except Exception:
                 logger.exception("Composer failed on %s", llm.model)
                 continue

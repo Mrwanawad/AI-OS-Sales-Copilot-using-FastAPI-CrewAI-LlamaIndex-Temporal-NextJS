@@ -57,8 +57,24 @@ services:
     dockerCommand: python scripts/purge_revoked_tokens.py
     envVars: *app-env
 
+  # Approved answers can quote prices, so they leave search unless a team lead renews them.
+  - type: cron
+    name: ai-os-expire-approved-answers
+    runtime: docker
+    schedule: "15 0 * * *"
+    dockerCommand: python scripts/expire_approved_answers.py
+    envVars: *app-env
+
+  # Egypt PDPL: clears interaction text, recordings, dormant cards and old closed tickets.
+  - type: cron
+    name: ai-os-apply-retention
+    runtime: docker
+    schedule: "45 0 * * *"
+    dockerCommand: python scripts/apply_retention.py
+    envVars: *app-env
+
   - type: pserv
     name: ai-os-qdrant
     runtime: image
-    image: {url: docker.io/qdrant/qdrant:v1.13.6}
+    image: {url: docker.io/qdrant/qdrant:v1.20.0}
     disk: {name: qdrant, mountPath: /qdrant/storage, sizeGB: 10}

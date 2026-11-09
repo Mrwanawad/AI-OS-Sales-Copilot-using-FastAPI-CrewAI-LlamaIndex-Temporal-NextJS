@@ -122,12 +122,21 @@ Deterministic checks run on every composed answer, after the model and before th
 
 These checks cover numbers and citations only. Non-numeric claims are measured by the eval gate.
 
+Two rule-based backstops escalate what a model tends to answer anyway:
+- Replies that only say the evidence is silent ("the documents don't mention it").
+- Questions asking for a person's decision: matching a competitor, a discount or exception to approve, a promise beyond the contract, or a price forecast. These skip the router, so policy text can't be stretched into a decision.
+
 ## CRM Copilot Safety
 - Every card claim cites source interactions, and its numbers must appear in them. Unsupported claims are dropped and counted.
 - Post-call updates touch allowlisted fields only. Automation moves a stage forward only, and never to reserved, won or lost.
 - A recording without consent on file is not transcribed.
 - Webhooks are HMAC-signed with a replay window. The event id makes redelivery harmless.
 - Reps reach only leads assigned to them; team leads and managers reach all.
+
+## Personal Data (Egypt PDPL)
+- Erasure: a manager's `DELETE /crm/leads/{id}` removes the lead, its interactions, card, handovers, follow-ups, stored recordings and escalation tickets in one request. The source CRM and dialer copies must be erased there too.
+- Retention, applied daily: interaction text and recordings after `INTERACTION_CONTENT_RETENTION_DAYS` (call times and outcomes stay for the best-time model), cards and handovers of leads dormant for `DORMANT_CARD_RETENTION_DAYS`, closed tickets after `CLOSED_TICKET_RETENTION_DAYS`. The defaults are placeholders for the legal team.
+- Prompts and answers stay out of traces unless `LANGFUSE_CAPTURE_CONTENT` is on.
 
 ## Coaching Scoring
 - Personas are invented, so practice uses no client data.
@@ -145,6 +154,7 @@ These checks cover numbers and citations only. Non-numeric claims are measured b
 - An answer reaches shared knowledge only after a different person approves it.
 - Phone numbers, emails and national IDs block sharing, and answers about a specific lead can't be shared.
 - Approved answers can be revoked, which removes them from search.
+- Approved answers leave search after a review period (`APPROVED_ANSWER_VALID_DAYS`, 90 by default) unless a team lead renews them, so a quoted price can't stay live forever.
 
 ## Access Control
 - Signed tokens carry identity and role on every route except `/health` and the HMAC-signed webhook. Names and roles in request bodies are ignored.
@@ -167,11 +177,12 @@ These checks cover numbers and citations only. Non-numeric claims are measured b
 - Backend: FastAPI, Pydantic, Temporal, Redis (cache, rate limits), PostgreSQL, SQLAlchemy, sqlglot (SQL guard)
 - Integrations: CRM APIs/webhooks (Salesforce / HubSpot / Zoho / in-house), Twilio or local cloud telephony, WhatsApp Business API
 - Frontend: Next.js (chat + CRM widget mock)
-- Evaluation & observability: Ragas (retrieval metrics), DeepEval (pytest release gate), custom gold Q&A set, LLM-as-judge, Langfuse
+- Evaluation & observability: own retrieval metrics (recall@k, MRR, per-tag gates), DeepEval (pytest release gate), custom gold Q&A set, LLM-as-judge, Langfuse
 - DevOps: Docker, GitHub Actions, pytest, ruff, import-linter
 
 ## Tools Not Used (and why)
-- LangChain, LangGraph: replaced by CrewAI for agent work. Ragas pulls both in transitively, only in the `eval` extra; application code does not import them.
+- LangChain, LangGraph: replaced by CrewAI for agent work.
+- Ragas: dropped. It pulled LangChain and LangGraph in, and `scripts/run_eval.py` already computes the retrieval metrics against the gold set.
 - AutoGen, Google ADK, Microsoft Agent Framework: would duplicate CrewAI.
 - Celery: Temporal gives durable retries across multi-step pipelines.
 - Groq, Ollama and other LLM providers: LLM service is limited to Anthropic and OpenAI.

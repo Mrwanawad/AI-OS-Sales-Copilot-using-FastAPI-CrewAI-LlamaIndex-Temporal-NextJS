@@ -95,6 +95,20 @@ def get_crm_store() -> CrmStore:
 
 
 @lru_cache
+def _privacy():
+    from ai_os.bootstrap.crm import build_privacy
+
+    return build_privacy(Settings())
+
+
+def get_privacy():
+    try:
+        return _privacy()
+    except ValueError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
+@lru_cache
 def get_event_publisher() -> EventPublisher:
     from ai_os.bootstrap.crm import build_event_publisher
 
@@ -270,6 +284,7 @@ def create_app() -> FastAPI:
             auth,
             lead_access,
             get_recording_uploads,
+            get_privacy,
         )
     )
     app.include_router(knowledge_router(get_retrieve, auth))

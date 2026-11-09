@@ -12,6 +12,13 @@ class SessionClosed(Exception):
     """The session is finished or has reached its turn limit."""
 
 
+class SessionChanged(Exception):
+    """Another request updated the session first."""
+
+    def __init__(self, session_id: str) -> None:
+        super().__init__(f"Session {session_id} changed during this request; reload and retry")
+
+
 class NothingToScore(Exception):
     """The rep has not said anything yet."""
 

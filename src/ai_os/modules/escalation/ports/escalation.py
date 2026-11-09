@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 
 from ai_os.modules.escalation.domain.models import (
@@ -19,6 +20,12 @@ class EscalationStore(Protocol):
 
     async def update_ticket(self, ticket: Ticket, expected: TicketStatus) -> bool:
         """Returns False if the stored status no longer matches, so nothing changed."""
+        ...
+
+    async def delete_tickets_for_lead(self, lead_id: str) -> int: ...
+
+    async def delete_closed_tickets(self, before: datetime) -> int:
+        """Deletes answered and dismissed tickets closed before the cutoff."""
         ...
 
     async def add_candidate(self, candidate: KnowledgeCandidate) -> None: ...

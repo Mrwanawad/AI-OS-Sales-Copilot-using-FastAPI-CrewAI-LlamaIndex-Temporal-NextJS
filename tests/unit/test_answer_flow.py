@@ -368,6 +368,30 @@ async def test_asking_for_a_person_creates_ticket() -> None:
     assert answer.ticket_id == "T1"
 
 
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Our client says a competitor offered 20% off. What should I do?",
+        "Can I promise the client delivery by mid-2027?",
+        "ممكن أدي العميل خصم زيادة؟",
+    ],
+)
+async def test_judgment_questions_go_to_a_person_even_when_documents_cover_policy(
+    question: str,
+) -> None:
+    llm = ScriptedLLM(Intent.KNOWLEDGE)
+    tools = FakeTools(knowledge=[DOCUMENT])
+    composer = ScriptedComposer(composed("Policy allows up to 2% [E1]."))
+
+    answer = await agent(llm, composer, tools)(question)
+
+    assert answer.status is AnswerStatus.ESCALATED
+    assert answer.intent is Intent.ESCALATE
+    assert tools.tickets[0][1].startswith("needs a person's judgment")
+    assert llm.roles == []
+    assert composer.feedback == []
+
+
 async def test_canned_replies_follow_the_question_language() -> None:
     tools = FakeTools()
 

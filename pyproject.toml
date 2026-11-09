@@ -58,7 +58,6 @@ ml = [
 ]
 eval = [
     "deepeval",
-    "ragas",
 ]
 agents = [
     "crewai>=1.15.37",

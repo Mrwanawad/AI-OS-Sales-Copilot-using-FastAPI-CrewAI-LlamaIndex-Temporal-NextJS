@@ -8,9 +8,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile
 from pydantic import BaseModel, ValidationError
 
+from ai_os.modules.crm_copilot.application.privacy import ErasureReport, PersonalDataLifecycle
+from ai_os.modules.crm_copilot.domain.errors import LeadNotFound
 from ai_os.modules.crm_copilot.domain.models import ContextCard, InteractionKind, LeadStage
 from ai_os.modules.crm_copilot.ports.crm import CrmStore, EventPublisher, RecordingUploads
-from ai_os.shared.auth import Authenticator, LeadAccess, Principal
+from ai_os.shared.auth import Authenticator, LeadAccess, Principal, Role
 
 _MAX_SIGNATURE_AGE_SECONDS = 300
 _MAX_RECORDING_BYTES = 200 * 1024 * 1024
@@ -57,8 +59,20 @@ def create_router(
     auth: Authenticator,
     lead_access: LeadAccess,
     get_recordings: Callable[[], RecordingUploads] | None = None,
+    get_privacy: Callable[[], PersonalDataLifecycle] | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/crm", tags=["crm"])
+    Manager = Annotated[Principal, Depends(auth.require(Role.MANAGER))]
+
+    @router.delete("/leads/{lead_id}")
+    async def erase_lead(lead_id: str, user: Manager) -> ErasureReport:
+        """A client's PDPL erasure request. Cannot be undone."""
+        if get_privacy is None:
+            raise HTTPException(status_code=503, detail="Erasure is not configured")
+        try:
+            return await get_privacy().erase_lead(lead_id, user.subject)
+        except LeadNotFound as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
 
     @router.get("/leads")
     async def list_leads(

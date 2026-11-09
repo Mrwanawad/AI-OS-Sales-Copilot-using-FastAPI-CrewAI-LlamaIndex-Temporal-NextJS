@@ -18,6 +18,7 @@ from pathlib import Path
 from run_eval import evaluate as evaluate_retrieval
 
 from ai_os.modules.agent.domain.grounding import find_grounding_problems
+from ai_os.modules.agent.domain.judgment import needs_judgment
 from ai_os.modules.agent.domain.models import Evidence, EvidenceItem, SourceKind
 from ai_os.modules.agent.domain.non_answers import says_evidence_is_silent
 from ai_os.modules.inventory.adapters.outbound.sql_guard import SqlGlotGuard
@@ -94,6 +95,16 @@ def evaluate_non_answers() -> dict:
     return {**_confusion(rows), "misses": misses}
 
 
+def evaluate_judgment() -> dict:
+    rows, misses = [], []
+    for case in _lines("judgment_cases.jsonl"):
+        flagged = needs_judgment(case["question"]) is not None
+        rows.append((case["judgment"], flagged))
+        if flagged != case["judgment"]:
+            misses.append(case["question"])
+    return {**_confusion(rows), "misses": misses}
+
+
 def replay_recorded_answers(run: str = "gemini-after-fixes") -> dict | None:
     """Re-applies today's rule-based checks to answers a real model gave in an earlier run.
 
@@ -107,7 +118,10 @@ def replay_recorded_answers(run: str = "gemini-after-fixes") -> dict | None:
     changed, passed = [], 0
     for result in results:
         status = result["status"]
-        if status == "answered" and says_evidence_is_silent(result["answer"]):
+        if status != "escalated" and needs_judgment(result["question"]):
+            status = "escalated"
+            changed.append(result["question"])
+        elif status == "answered" and says_evidence_is_silent(result["answer"]):
             status = "escalated"
             changed.append(result["question"])
         other_problems = [p for p in result["problems"] if not p.startswith("status")]
@@ -137,6 +151,7 @@ def write_report(report: dict, directory: Path) -> None:
     )
     retrieval = report["retrieval"]
     sql, grounding, silent = report["sql_guard"], report["grounding"], report["non_answers"]
+    judgment = report["judgment"]
     lines = [
         "# Offline evaluation",
         "",
@@ -156,6 +171,7 @@ def write_report(report: dict, directory: Path) -> None:
         ("SQL guard", sql, "blocked"),
         ("Grounding check", grounding, "rejected"),
         ("Non-answer detector", silent, "escalated"),
+        ("Judgment-question detector", judgment, "escalated"),
     ):
         lines += [
             "",
@@ -212,6 +228,7 @@ def main() -> None:
         "sql_guard": evaluate_sql_guard(),
         "grounding": evaluate_grounding(),
         "non_answers": evaluate_non_answers(),
+        "judgment": evaluate_judgment(),
         "replay": replay_recorded_answers(),
     }
     write_report(report, arguments.output)

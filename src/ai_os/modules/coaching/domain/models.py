@@ -53,3 +53,5 @@ class RolePlaySession:
     status: SessionStatus = SessionStatus.ACTIVE
     turns: list[Turn] = field(default_factory=list)
     scorecard: Scorecard | None = None
+    # Bumped on every save; a save based on an older version is refused.
+    version: int = 0

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 from ai_os.modules.coaching.adapters.outbound.postgres_store import PostgresSessionStore
+from ai_os.modules.coaching.domain.errors import SessionChanged
 from ai_os.modules.coaching.domain.models import (
     CriterionScore,
     RolePlaySession,
@@ -54,7 +55,7 @@ async def test_session_round_trips_and_updates(store: PostgresSessionStore) -> N
     assert await store.get("s1") == SESSION
 
     scorecard = Scorecard([CriterionScore("discovery", None, "Unverified")], None)
-    finished = replace(SESSION, status=SessionStatus.FINISHED, scorecard=scorecard)
+    finished = replace(SESSION, status=SessionStatus.FINISHED, scorecard=scorecard, version=1)
     await store.save(finished)
 
     assert await store.get("s1") == finished
@@ -62,3 +63,16 @@ async def test_session_round_trips_and_updates(store: PostgresSessionStore) -> N
 
 async def test_missing_session_is_none(store: PostgresSessionStore) -> None:
     assert await store.get("missing") is None
+
+
+async def test_save_from_a_stale_version_is_refused(store: PostgresSessionStore) -> None:
+    await store.save(SESSION)
+    first = replace(SESSION, turns=[*SESSION.turns, Turn(Speaker.BUYER, "First")], version=1)
+    second = replace(SESSION, turns=[*SESSION.turns, Turn(Speaker.BUYER, "Second")], version=1)
+    await store.save(first)
+
+    with pytest.raises(SessionChanged):
+        await store.save(second)
+    with pytest.raises(SessionChanged):
+        await store.save(SESSION)
+    assert await store.get("s1") == first

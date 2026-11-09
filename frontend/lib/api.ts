@@ -73,6 +73,7 @@ export interface Candidate {
   project: string;
   proposed_by: string;
   status: string;
+  expires_at: string | null;
 }
 
 export interface RegisteredDocument {

@@ -1,7 +1,18 @@
+from datetime import datetime
 from typing import TypeVar
 
 from pydantic import TypeAdapter
-from sqlalchemy import Column, DateTime, Index, MetaData, String, Table, select, update
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Index,
+    MetaData,
+    String,
+    Table,
+    delete,
+    select,
+    update,
+)
 from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -65,6 +76,31 @@ class PostgresEscalationStore:
 
     async def update_ticket(self, ticket: Ticket, expected: TicketStatus) -> bool:
         return await self._update(tickets, _TICKET, ticket, expected.value)
+
+    async def delete_tickets_for_lead(self, lead_id: str) -> int:
+        statement = delete(tickets).where(tickets.c.payload["lead_id"].astext == lead_id)
+        async with self._engine.begin() as connection:
+            return (await connection.execute(statement)).rowcount
+
+    async def delete_closed_tickets(self, before: datetime) -> int:
+        # A ticket closes after it opens, so created_at narrows the scan.
+        query = select(tickets.c.id, tickets.c.payload["closed_at"].astext).where(
+            tickets.c.status != TicketStatus.OPEN.value, tickets.c.created_at < before
+        )
+        async with self._engine.connect() as connection:
+            rows = (await connection.execute(query)).all()
+        doomed = [
+            ticket_id
+            for ticket_id, closed_at in rows
+            if closed_at and datetime.fromisoformat(closed_at) < before
+        ]
+        if not doomed:
+            return 0
+        statement = delete(tickets).where(
+            tickets.c.id.in_(doomed), tickets.c.status != TicketStatus.OPEN.value
+        )
+        async with self._engine.begin() as connection:
+            return (await connection.execute(statement)).rowcount
 
     async def add_candidate(self, candidate: KnowledgeCandidate) -> None:
         await self._add(candidates, _CANDIDATE, candidate)
