@@ -1,6 +1,6 @@
 # Checkpoint — AI OS
 
-Last updated: 2026-11-09 (evening), during step 9. Full design: `architecture.md`.
+Last updated: 2026-11-09 (night), during step 9. Full design: `architecture.md`.
 
 ## Current State
 - Build steps 1 (scaffold), 2 (Knowledge), 3 (Inventory), 4 (Agent), 5 (CRM Copilot), 6 (Coaching), 7 (Best-time model) and 8 (Escalation and memory loop) of 9 are done. Step 9 is partly done: everything buildable without API keys or your accounts is built, and nothing is deployed.
@@ -8,7 +8,8 @@ Last updated: 2026-11-09 (evening), during step 9. Full design: `architecture.md
 - `scripts/smoke_e2e.py` passes all 97 checks (84 before, plus login, logout, upload, worker ingestion from Postgres and re-upload versioning) on PGVector: real API and Temporal worker processes, real Postgres, real small models, over HTTP, with scripted LLMs. Qdrant server mode (1.20.0 Windows binary, 2026-11-09) passes all 96 checks it runs, including re-upload versioning and revoke deletes.
 - Postgres tests run on an embedded Postgres 16 with pgvector (`pgserver`, dev dependency), or on `TEST_DATABASE_URL` when set. Docker is not needed.
 - `ruff check`, `ruff format --check` and all 6 `lint-imports` contracts pass.
-- Public repo: https://github.com/Mrwanawad/AI-OS-Sales-Copilot-using-FastAPI-CrewAI-LlamaIndex-Temporal-NextJS. 9 commits on `main`, all authored by Mrwan with no Claude lines. CI (backend and frontend jobs) is green on `3c20c7c`. The older GitHub repo `AIOS-CRM-Copilot` holds a different version and was left alone.
+- Public repo: https://github.com/Mrwanawad/AI-OS-Sales-Copilot-using-FastAPI-CrewAI-LlamaIndex-Temporal-NextJS. 13 commits on `main`, all authored by Mrwan with no Claude lines. CI (backend and frontend jobs) is green on `35424fd` (README rewrite), the latest commit. Working tree clean before this checkpoint update.
+- Older GitHub repo `AIOS-CRM-Copilot` (https://github.com/Mrwanawad/AIOS-CRM-Copilot) is the earlier prototype (LangGraph/Gemini-embeddings design, pricing + knowledge modules only, 68 tests). Its code was not changed; only its README was rewritten on 2026-11-09 (see below).
 - No paid API keys. Answers were evaluated on Gemini's free tier only (see Evaluation below). Nothing is deployed.
 - `scripts/dev_stack.py` runs the whole backend without Docker; the web app was tested in Chrome against it (login, leads, chat, uploads, escalations).
 
@@ -122,6 +123,11 @@ Last updated: 2026-11-09 (evening), during step 9. Full design: `architecture.md
 - Qdrant pinned to 1.20.0 in `render.yaml` and `docker-compose.yml`, matching `qdrant-client` 1.20.
 - `scripts/smoke_e2e.py` takes `SMOKE_PORT` (8765 is used by another project's dashboard here).
 
+### 2026-11-09 night: READMEs
+- **This repo:** `README.md` rewritten (`35424fd`): problem, feature table, Mermaid architecture and answer-flow diagrams, safety design, framework roles, tech stack and what was deliberately not used, methodologies, evaluation results with their limits, test and CI gates, run/deploy steps, project structure, honest limits. CI green.
+- **`AIOS-CRM-Copilot` (older prototype repo):** README was the weakest of the recent repos (2 KB for ~140 files). Rewritten from its actual code, ADRs and its own CHECKPOINT: built-today table, 3 Mermaid diagrams (hexagonal modules, manifest ingestion, hybrid RRF retrieval), pricing engine guarantees, safety rules, synthetic corpus, eval numbers labelled as an upper bound, 68 tests (57 unit verified locally; the 11 Postgres tests hit a Windows DLL error here, CI runs them), stack in use vs planned, methodologies, config table, ADR index, roadmap, limits. Commit `e5879f5` on its `main`, authored and committed by Mrwanawad, no Claude lines. Commit guard green; CI green after a full rerun (the first run's `docker` job never started).
+- `AIOS-CRM-Copilot` also has an unmerged branch `claude/modest-albattani-rq1fu1` (optional Cohere reranker, section-level paraphrased eval, live Gemini embedding check). Its README describes `main` only; update the status, roadmap and evaluation sections if that branch is merged.
+
 ### Evaluation (2026-11-08)
 All cases are synthetic, on the invented demo data. Reports in `evals/results/`; summary in the README.
 - **Offline, no LLM** (`scripts/run_offline_evals.py`; CI runs it with `--gate` against `evals/offline_thresholds.json`): SQL guard 74/74 (`evals/sql_guard_cases.jsonl`), grounding 30/30 (`grounding_cases.jsonl`, 28/30 before the scale and percentage fix), non-answer detector 63/63 (`non_answer_cases.jsonl`, 49 replies recorded from real Gemini runs).
@@ -177,6 +183,7 @@ All cases are synthetic, on the invented demo data. Reports in `evals/results/`;
 - [x] Ragas dropped (2026-11-09).
 - [ ] Choose the escalation webhook receiver (n8n, Zapier or a WhatsApp gateway).
 - [ ] Get the brokerage's discount and calling-hours policy.
+- [ ] Merge, keep or delete the unmerged `claude/modest-albattani-rq1fu1` branch in `AIOS-CRM-Copilot`.
 
 ## Dependency Pins
 Changing these needs a re-check, because each one resolves a real conflict.
