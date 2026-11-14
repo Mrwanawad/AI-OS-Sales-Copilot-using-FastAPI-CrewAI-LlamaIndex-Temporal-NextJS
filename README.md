@@ -19,6 +19,8 @@ call, coaches them, and hands anything risky to a human.**
 
 </div>
 
+<p align="center"><img src="docs/demo.gif" width="100%" alt="Screen recording of the sales copilot: a rep opens a lead and sees the context card, asks about a payment plan and gets an answer citing its source documents, then asks about a 25 percent discount and the question is sent to the team lead instead of answered."/></p>
+
 ---
 
 ## Contents

@@ -12,3 +12,4 @@ mlruns/
 mlflow.db
 .deepeval/
 .devdata/
+docs/demo/build/
